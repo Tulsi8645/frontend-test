@@ -1,0 +1,51 @@
+{
+    "name": "Sales AI Bot",
+    "short_name": "Sales AI Bot",
+    "description": "AI-powered sales assistant admin dashboard. Manage customer conversations from Website, Facebook, WhatsApp, and Instagram in one place.",
+    "id": "sales-ai-bot-admin",
+    "theme_color": "#4f46e5",
+    "background_color": "#ffffff",
+    "display": "standalone",
+    "orientation": "portrait",
+    "scope": "/",
+    "start_url": "/admin/dashboard",
+    "categories": ["business", "productivity"],
+    "lang": "en",
+    "dir": "ltr",
+    "icons": [
+        {
+            "src": "/icons/icon-192.png",
+            "type": "image/png",
+            "sizes": "192x192",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icons/icon-256.png",
+            "type": "image/png",
+            "sizes": "256x256",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icons/icon-512.png",
+            "type": "image/png",
+            "sizes": "512x512",
+            "purpose": "any maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "All Chats",
+            "short_name": "Chats",
+            "description": "View all customer conversations",
+            "url": "/admin/chats",
+            "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Knowledge Base",
+            "short_name": "Knowledge",
+            "description": "Manage AI knowledge base",
+            "url": "/admin/knowledge",
+            "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+        }
+    ]
+}
