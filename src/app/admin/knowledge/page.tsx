@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,10 +14,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { Plus, Search, MoreVertical, Edit, Trash2, Filter, Database, Check, X, Brain, Tag, Layers, FileText } from 'lucide-react';
+import { Plus, Search, MoreVertical, Edit, Trash2, Filter, Database, Check, X, Brain, Tag, Layers, FileText, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
-type KnowledgeType = 'sentence' | 'key_value' | 'repair_item' | 'shop_info' | 'list';
+type KnowledgeType = 'sentence' | 'key_value' | 'product' | 'service' | 'business_info' | 'list' | 'faq';
 
 interface KnowledgeEntry {
     _id: string;
@@ -35,9 +35,11 @@ interface KnowledgeEntry {
 const knowledgeTypes: { value: KnowledgeType; label: string; description: string; color: string; icon: any }[] = [
     { value: 'sentence', label: 'Sentence', description: 'Simple text info', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30', icon: FileText },
     { value: 'key_value', label: 'Key-Value', description: 'Structured data', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30', icon: Database },
-    { value: 'repair_item', label: 'Repair Item', description: 'Service details', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', icon: Layers },
-    { value: 'shop_info', label: 'Shop Info', description: 'Shop details', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', icon: Database },
+    { value: 'product', label: 'Product', description: 'Product details', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', icon: Layers },
+    { value: 'service', label: 'Service', description: 'Service details', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30', icon: Database },
+    { value: 'business_info', label: 'Business Info', description: 'Business details', color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30', icon: Tag },
     { value: 'list', label: 'List', description: 'Array items', color: 'bg-pink-500/20 text-pink-400 border-pink-500/30', icon: Tag },
+    { value: 'faq', label: 'FAQ', description: 'Frequently asked questions', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30', icon: Brain },
 ];
 
 export default function AdminKnowledge() {
@@ -49,6 +51,10 @@ export default function AdminKnowledge() {
     const [typeFilter, setTypeFilter] = useState<string>('all');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingEntry, setEditingEntry] = useState<KnowledgeEntry | null>(null);
+    const [duplicatingEntry, setDuplicatingEntry] = useState<KnowledgeEntry | null>(null);
+    const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
+    const [duplicateNewKey, setDuplicateNewKey] = useState('');
+    const [deleteAfterDuplicate, setDeleteAfterDuplicate] = useState(false);
 
     const [formType, setFormType] = useState<KnowledgeType>('sentence');
     const [formKey, setFormKey] = useState('');
@@ -126,14 +132,21 @@ export default function AdminKnowledge() {
         setIsDialogOpen(true);
     };
 
+    const openDuplicateDialog = (entry: KnowledgeEntry) => {
+        setDuplicatingEntry(entry);
+        setDuplicateNewKey(`${entry.key}_copy`);
+        setDeleteAfterDuplicate(false);
+        setIsDuplicateDialogOpen(true);
+    };
+
     const handleSubmit = async () => {
         let parsedValue: any = formValue;
-        if (['key_value', 'repair_item', 'list'].includes(formType)) {
+        if (['key_value', 'product', 'service', 'list'].includes(formType)) {
             try {
                 parsedValue = JSON.parse(formValue);
             } catch {
-                toast.error('Invalid JSON format for value');
-                return;
+                // Keep as plain text if not valid JSON
+                parsedValue = formValue;
             }
         }
 
@@ -189,6 +202,55 @@ export default function AdminKnowledge() {
             }
         } catch {
             toast.error('Failed to delete');
+        }
+    };
+
+    const handleDuplicate = async () => {
+        if (!duplicatingEntry || !duplicateNewKey.trim()) {
+            toast.error('Please enter a new key');
+            return;
+        }
+
+        const payload = {
+            type: duplicatingEntry.type,
+            key: duplicateNewKey.trim(),
+            value: duplicatingEntry.value,
+            category: duplicatingEntry.category,
+            tags: duplicatingEntry.tags,
+            priority: duplicatingEntry.priority,
+            isActive: duplicatingEntry.isActive,
+        };
+
+        try {
+            const response = await fetch('/api/admin/knowledge', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                credentials: 'same-origin',
+            });
+
+            if (response.status === 401) {
+                router.push('/admin/login');
+                return;
+            }
+
+            if (response.ok) {
+                toast.success('Entry duplicated with new key');
+                setIsDuplicateDialogOpen(false);
+
+                // Delete old entry if requested
+                if (deleteAfterDuplicate) {
+                    await handleDelete(duplicatingEntry._id);
+                    toast.success('Old entry deleted');
+                }
+
+                fetchEntries();
+            } else {
+                const data = await response.json();
+                toast.error(data.error || 'Failed to duplicate');
+            }
+        } catch {
+            toast.error('Failed to duplicate entry');
         }
     };
 
@@ -257,8 +319,8 @@ export default function AdminKnowledge() {
                         <CardTitle className="text-sm font-medium text-zinc-500">Actions</CardTitle>
                     </CardHeader>
                     <CardContent className="flex-1 flex items-center justify-center">
-                        <Button 
-                            onClick={openAddDialog} 
+                        <Button
+                            onClick={openAddDialog}
                             className="bg-emerald-600 hover:bg-emerald-700 text-white"
                         >
                             <Plus className="w-4 h-4 mr-2" />
@@ -355,6 +417,10 @@ export default function AdminKnowledge() {
                                                             <Edit className="w-4 h-4 mr-2" />
                                                             Edit
                                                         </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => openDuplicateDialog(entry)} className="text-zinc-300 hover:text-white hover:bg-zinc-800 cursor-pointer">
+                                                            <Copy className="w-4 h-4 mr-2" />
+                                                            Duplicate
+                                                        </DropdownMenuItem>
                                                         <DropdownMenuItem
                                                             onClick={() => handleDelete(entry._id)}
                                                             className="text-red-400 hover:text-red-300 hover:bg-zinc-800 cursor-pointer"
@@ -376,7 +442,7 @@ export default function AdminKnowledge() {
 
             {/* Add/Edit Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-zinc-900 border-zinc-800 text-white">
+                <DialogContent className="!w-[40vw] sm:!max-w-[40vw] h-[60vh] overflow-y-auto bg-zinc-900 border-zinc-800 text-white">
                     <DialogHeader>
                         <DialogTitle className="text-xl">{editingEntry ? 'Edit Entry' : 'Add New Entry'}</DialogTitle>
                         <DialogDescription className="text-zinc-500">
@@ -423,13 +489,13 @@ export default function AdminKnowledge() {
                                 value={formValue}
                                 onChange={(e) => setFormValue(e.target.value)}
                                 placeholder={
-                                    formType === 'repair_item'
-                                        ? '{"device": "MacBook", "service": "Screen", "price": "Rs 25000"}'
+                                    formType === 'product'
+                                        ? '{"name": "MacBook Pro", "price": "Rs 25000", "description": "..."}'
                                         : formType === 'key_value'
-                                        ? '{"key": "value"}'
-                                        : formType === 'list'
-                                        ? '["item1", "item2"]'
-                                        : 'Enter value...'
+                                            ? '{"key": "value"}'
+                                            : formType === 'list'
+                                                ? '["item1", "item2"]'
+                                                : 'Enter value...'
                                 }
                                 rows={4}
                                 className="font-mono text-sm bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-500"
@@ -483,11 +549,66 @@ export default function AdminKnowledge() {
                     </div>
 
                     <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800">
+                        <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-zinc-700 bg-gray-600 text-black hover:text-white hover:bg-zinc-800">
                             Cancel
                         </Button>
                         <Button onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700 text-white">
                             {editingEntry ? 'Update' : 'Create'}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Duplicate/Rename Dialog */}
+            <Dialog open={isDuplicateDialogOpen} onOpenChange={setIsDuplicateDialogOpen}>
+                <DialogContent className="max-w-md bg-zinc-900 border-zinc-800 text-white">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl">Duplicate / Rename Entry</DialogTitle>
+                        <DialogDescription className="text-zinc-500">
+                            Create a copy with a new key. Optionally delete the original.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label className="text-zinc-300">Original Key</Label>
+                            <Input
+                                value={duplicatingEntry?.key || ''}
+                                disabled
+                                className="bg-zinc-950 border-zinc-800 text-white"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-zinc-300">New Key (unique identifier)</Label>
+                            <Input
+                                value={duplicateNewKey}
+                                onChange={(e) => setDuplicateNewKey(e.target.value)}
+                                placeholder="e.g., new_key_name"
+                                className="bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-500"
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-2">
+                            <input
+                                type="checkbox"
+                                id="deleteAfterDuplicate"
+                                checked={deleteAfterDuplicate}
+                                onChange={(e) => setDeleteAfterDuplicate(e.target.checked)}
+                                className="rounded border-zinc-600 bg-zinc-800"
+                            />
+                            <Label htmlFor="deleteAfterDuplicate" className="text-zinc-300 text-sm">
+                                Delete original entry after duplicating (rename mode)
+                            </Label>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setIsDuplicateDialogOpen(false)} className="border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800">
+                            Cancel
+                        </Button>
+                        <Button onClick={handleDuplicate} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                            {deleteAfterDuplicate ? 'Rename' : 'Duplicate'}
                         </Button>
                     </div>
                 </DialogContent>

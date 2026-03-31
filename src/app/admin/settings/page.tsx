@@ -278,7 +278,7 @@ console.log(data.reply); // AI response`;
                                         variant="outline"
                                         size="icon"
                                         onClick={() => copyToClipboard(apiBaseUrl, 'baseUrl')}
-                                        className="border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800"
+                                        className="border-zinc-700 text-white bg-zinc-600 hover:text-white hover:bg-zinc-800"
                                     >
                                         {copiedField === 'baseUrl' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                                     </Button>
@@ -288,10 +288,10 @@ console.log(data.reply); // AI response`;
                             <Separator className="bg-zinc-800" />
 
                             <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-zinc-400">API Key</Label>
+                                <Label className="text-zinc-400 flex items-center gap-2">
+                                    API Key
                                     <Badge className="bg-zinc-700 text-zinc-300">Public</Badge>
-                                </div>
+                                </Label>
                                 <div className="flex gap-2">
                                     <Input 
                                         value={profile?.apiKey || ''} 
@@ -303,7 +303,7 @@ console.log(data.reply); // AI response`;
                                         variant="outline"
                                         size="icon"
                                         onClick={() => copyToClipboard(profile?.apiKey || '', 'apiKey')}
-                                        className="border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800"
+                                        className="border-zinc-700 text-white bg-zinc-600 hover:text-white hover:bg-zinc-800"
                                     >
                                         {copiedField === 'apiKey' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                                     </Button>
@@ -311,10 +311,10 @@ console.log(data.reply); // AI response`;
                             </div>
 
                             <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-zinc-400">API Secret</Label>
+                                <Label className="text-zinc-400 flex items-center gap-2">
+                                    API Secret
                                     <Badge className="bg-red-900/50 text-red-400 border-red-800">Private</Badge>
-                                </div>
+                                </Label>
                                 <div className="flex gap-2">
                                     <Input 
                                         value={profile?.apiSecret || ''} 
@@ -326,7 +326,7 @@ console.log(data.reply); // AI response`;
                                         variant="outline"
                                         size="icon"
                                         onClick={() => copyToClipboard(profile?.apiSecret || '', 'apiSecret')}
-                                        className="border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800"
+                                        className="border-zinc-700 text-white bg-zinc-600 hover:text-white hover:bg-zinc-800"
                                     >
                                         {copiedField === 'apiSecret' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                                     </Button>
@@ -347,7 +347,7 @@ console.log(data.reply); // AI response`;
                                     variant="outline" 
                                     onClick={regenerateApiKeys}
                                     disabled={regenerating}
-                                    className="border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800"
+                                    className="border-zinc-700 text-white bg-zinc-600 hover:text-white hover:bg-emerald-800"
                                 >
                                     {regenerating ? 'Regenerating...' : 'Regenerate'}
                                 </Button>

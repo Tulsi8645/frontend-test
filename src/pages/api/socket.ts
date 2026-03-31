@@ -92,27 +92,28 @@ const ioHandler = async (req: NextApiRequest, res: ResponseWithSocket) => {
 
                     const session = await ChatSession.findOne({ sessionId });
                     if (session && session.status === 'taken_over' && session.takenOverBy === adminId) {
-                        session.messages.push({
-                            role: 'admin',
+                        const newMessage = {
+                            role: 'admin' as const,
                             text: message,
                             timestamp: new Date(),
                             adminId,
-                        });
+                        };
+                        session.messages.push(newMessage);
                         session.lastActivityAt = new Date();
                         await session.save();
 
-                        // Broadcast to session room
+                        // Broadcast to session room with the actual saved timestamp
                         io.to(sessionId).emit('new-message', {
                             role: 'admin',
                             text: message,
-                            timestamp: new Date(),
+                            timestamp: newMessage.timestamp,
                             adminId,
                         });
 
-                        // Notify other admins
+                        // Notify other admins with the actual saved timestamp
                         io.to('admins').emit('session-updated', {
                             sessionId,
-                            message: { role: 'admin', text: message, timestamp: new Date(), adminId },
+                            message: { role: 'admin' as const, text: message, timestamp: newMessage.timestamp, adminId },
                         });
                     }
                 } catch (error) {
@@ -129,25 +130,26 @@ const ioHandler = async (req: NextApiRequest, res: ResponseWithSocket) => {
 
                     const session = await ChatSession.findOne({ sessionId });
                     if (session && session.status === 'active') {
-                        session.messages.push({
-                            role: 'bot',
+                        const newMessage = {
+                            role: 'bot' as const,
                             text: message,
                             timestamp: new Date(),
-                        });
+                        };
+                        session.messages.push(newMessage);
                         session.lastActivityAt = new Date();
                         await session.save();
 
-                        // Broadcast to session room
+                        // Broadcast to session room with the actual saved timestamp
                         io.to(sessionId).emit('new-message', {
                             role: 'bot',
                             text: message,
-                            timestamp: new Date(),
+                            timestamp: newMessage.timestamp,
                         });
 
-                        // Notify admins
+                        // Notify admins with the actual saved timestamp
                         io.to('admins').emit('session-updated', {
                             sessionId,
-                            message: { role: 'bot', text: message, timestamp: new Date() },
+                            message: { role: 'bot' as const, text: message, timestamp: newMessage.timestamp },
                         });
                     }
                 } catch (error) {

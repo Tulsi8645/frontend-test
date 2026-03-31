@@ -45,6 +45,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     const [isTakenOver, setIsTakenOver] = useState(false);
     const [socket, setSocket] = useState<Socket | null>(null);
     const chatEndRef = useRef<HTMLDivElement>(null);
+    const processedMessages = useRef<Set<string>>(new Set());
 
     const scrollToBottom = useCallback(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -68,22 +69,20 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                 }
             });
 
-            newSocket.on('new-message', (msg: ChatMessage & { sessionId?: string }) => {
+            newSocket.on('new-message', (msg: ChatMessage & { _id?: string; sessionId?: string }) => {
                 console.log('Received new-message:', msg);
-                setChatHistory(prev => {
-                    // Check for duplicates by text and role
-                    const isDuplicate = prev.some(m =>
-                        m.text === msg.text &&
-                        m.role === msg.role &&
-                        m.timestamp && msg.timestamp &&
-                        Math.abs(new Date(m.timestamp).getTime() - new Date(msg.timestamp).getTime()) < 1000
-                    );
-                    if (isDuplicate) {
-                        console.log('Duplicate message ignored:', msg);
-                        return prev;
-                    }
-                    return [...prev, msg];
-                });
+                // Use _id if available (from DB), otherwise create key from content + timestamp
+                const msgKey = msg._id 
+                    ? `db:${msg._id}` 
+                    : `socket:${msg.role}:${msg.text}:${new Date(msg.timestamp || Date.now()).getTime()}`;
+                
+                if (processedMessages.current.has(msgKey)) {
+                    console.log('Duplicate message ignored:', msg);
+                    return;
+                }
+                processedMessages.current.add(msgKey);
+                
+                setChatHistory(prev => [...prev, msg]);
             });
 
             newSocket.on('session-taken-over', () => {
@@ -273,7 +272,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                                         ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 rounded-tl-none border border-amber-200 dark:border-amber-800 shadow-sm'
                                         : 'bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-tl-none border border-zinc-100 dark:border-zinc-700 shadow-sm'
                                     }`}
-                                    style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
+                                    style={{ overflowWrap: 'break-word', wordBreak: 'normal' }}
                                 >
                                     {chat.role === 'admin' && (
                                         <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1">Admin</p>

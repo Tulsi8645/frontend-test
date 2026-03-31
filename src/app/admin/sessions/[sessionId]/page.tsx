@@ -74,6 +74,7 @@ export default function SessionDetailPage() {
     const [socket, setSocket] = useState<Socket | null>(null);
     const [adminId, setAdminId] = useState<string>('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const processedMessages = useRef<Set<string>>(new Set());
 
     // Get admin ID from token
     useEffect(() => {
@@ -142,16 +143,20 @@ export default function SessionDetailPage() {
             });
 
             // Listen for new messages
-            newSocket.on('new-message', (data: ChatMessage) => {
+            newSocket.on('new-message', (data: ChatMessage & { _id?: string }) => {
+                // Use _id if available (from DB), otherwise create key from content + timestamp
+                const msgKey = data._id 
+                    ? `db:${data._id}` 
+                    : `socket:${data.role}:${data.text}:${new Date(data.timestamp).getTime()}`;
+                
+                if (processedMessages.current.has(msgKey)) {
+                    console.log('Duplicate message ignored:', data);
+                    return;
+                }
+                processedMessages.current.add(msgKey);
+                
                 setSession(prev => {
                     if (!prev) return prev;
-                    const exists = prev.messages.some(m =>
-                        m.text === data.text &&
-                        m.role === data.role &&
-                        Math.abs(new Date(m.timestamp).getTime() - new Date(data.timestamp).getTime()) < 2000
-                    );
-                    if (exists) return prev;
-
                     return {
                         ...prev,
                         messages: [...prev.messages, data],
@@ -420,8 +425,8 @@ export default function SessionDetailPage() {
             <Card className="bg-zinc-900/50 border-zinc-800 backdrop-blur">
                 <CardContent className="p-0">
                     <ScrollArea className="h-[500px] lg:h-[calc(100vh-280px)] border border-zinc-800 rounded-lg bg-zinc-950/50">
-                        <div className="space-y-4 p-4">
-                            {session.messages.length === 0 ? (
+                        <div className="space-y-6 p-4 sm:p-6">
+                            {(!session?.messages || session.messages.length === 0) ? (
                                 <div className="text-center text-zinc-500 py-8">
                                     <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
                                     <p>No messages yet</p>
@@ -431,12 +436,12 @@ export default function SessionDetailPage() {
                                     <div
                                         key={idx}
                                         className={cn(
-                                            'flex gap-3',
+                                            'flex gap-2 sm:gap-3',
                                             msg.role === 'user' ? 'justify-start' : 'justify-end'
                                         )}
                                     >
                                         {msg.role === 'user' && (
-                                            <Avatar className="w-8 h-8 shrink-0">
+                                            <Avatar className="w-7 h-7 sm:w-8 sm:h-8 shrink-0 mt-1">
                                                 <AvatarFallback className={cn(
                                                     "text-xs",
                                                     session.channel === 'website' || !session.channel
@@ -446,25 +451,25 @@ export default function SessionDetailPage() {
                                                     {session.channel === 'facebook' ? 'F' :
                                                         session.channel === 'whatsapp' ? 'W' :
                                                             session.channel === 'instagram' ? 'I' :
-                                                                <Globe className="w-4 h-4" />}
+                                                                <Globe className="w-3 h-3 sm:w-4 sm:h-4" />}
                                                 </AvatarFallback>
                                             </Avatar>
                                         )}
                                         <div
                                             className={cn(
-                                                'max-w-[85%] rounded-lg p-3 text-sm prose prose-invert max-w-none',
+                                                'max-w-[80%] sm:max-w-[75%] rounded-2xl px-4 py-3 text-sm prose prose-invert max-w-none shadow-sm',
                                                 msg.role === 'user'
-                                                    ? 'bg-zinc-800 text-zinc-100'
+                                                    ? 'bg-zinc-800 text-zinc-100 rounded-tl-md'
                                                     : msg.role === 'admin'
-                                                        ? 'bg-emerald-600/20 text-emerald-100 border border-emerald-600/30'
-                                                        : 'bg-emerald-600 text-white'
+                                                        ? 'bg-emerald-600/20 text-emerald-100 border border-emerald-600/30 rounded-tr-md'
+                                                        : 'bg-emerald-600 text-white rounded-tr-md'
                                             )}
                                         >
                                             {msg.role === 'bot' ? (
                                                 <ReactMarkdown
                                                     remarkPlugins={[remarkGfm]}
                                                     components={{
-                                                        p: ({ node: _node, ...props }) => <p className="m-0" {...props} />,
+                                                        p: ({ node: _node, ...props }) => <p className="m-0 leading-relaxed" {...props} />,
                                                         ul: ({ node: _node, ...props }) => <ul className="list-disc ml-4 my-1" {...props} />,
                                                         ol: ({ node: _node, ...props }) => <ol className="list-decimal ml-4 my-1" {...props} />,
                                                         li: ({ node: _node, ...props }) => <li className="my-0.5" {...props} />,
@@ -474,14 +479,14 @@ export default function SessionDetailPage() {
                                                     {msg.text}
                                                 </ReactMarkdown>
                                             ) : (
-                                                <p className="m-0">{msg.text}</p>
+                                                <p className="m-0 leading-relaxed">{msg.text}</p>
                                             )}
-                                            <p className="text-xs opacity-70 mt-2">
-                                                {new Date(msg.timestamp).toLocaleTimeString()}
+                                            <p className="text-[10px] sm:text-xs opacity-60 mt-2">
+                                                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </p>
                                         </div>
                                         {(msg.role === 'bot' || msg.role === 'admin') && (
-                                            <Avatar className="w-8 h-8 shrink-0">
+                                            <Avatar className="w-7 h-7 sm:w-8 sm:h-8 shrink-0 mt-1">
                                                 <AvatarFallback className={cn(
                                                     "text-xs",
                                                     msg.role === 'bot'
@@ -501,23 +506,23 @@ export default function SessionDetailPage() {
 
                     {/* Reply Input */}
                     {canReply && (
-                        <div className="p-4 border-t border-zinc-800">
-                            <div className="flex gap-2">
+                        <div className="p-3 sm:p-4 border-t border-zinc-800 bg-zinc-900/30">
+                            <div className="flex items-center gap-2 bg-zinc-950 rounded-full px-4 py-2 border border-zinc-800 focus-within:border-emerald-600/50 focus-within:ring-1 focus-within:ring-emerald-600/20">
                                 <Input
                                     placeholder="Type your reply..."
                                     value={replyMessage}
                                     onChange={(e) => setReplyMessage(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSendReply()}
                                     disabled={isSending}
-                                    className="flex-1 bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-500 focus:border-emerald-600"
+                                    className="flex-1 bg-transparent border-0 text-white placeholder:text-zinc-500 focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
                                 />
-                                <Button
+                                <button
                                     onClick={handleSendReply}
                                     disabled={!replyMessage.trim() || isSending}
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                    className="p-2 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <Send className="w-4 h-4 mr-2" />
-                                </Button>
+                                    <Send className="w-5 h-5" />
+                                </button>
                             </div>
                         </div>
                     )}
