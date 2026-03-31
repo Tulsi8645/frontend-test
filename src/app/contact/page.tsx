@@ -39,7 +39,7 @@ export default function ContactPage() {
                             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
                                 <Bot className="w-5 h-5 text-white" />
                             </div>
-                            <span className="font-bold text-xl">ChatBot AI</span>
+                            <span className="font-bold text-xl">Sales AI</span>
                         </Link>
                         <div className="hidden md:flex items-center gap-8">
                             <Link href="/#features" className="text-sm text-zinc-400 hover:text-white transition-colors">Features</Link>
@@ -132,7 +132,7 @@ export default function ContactPage() {
                                 <div className="space-y-4">
                                     <div>
                                         <h4 className="font-medium text-zinc-300 mb-1">How do I get started?</h4>
-                                        <p className="text-sm text-zinc-500">Sign up for a free account and create your first chatbot in minutes.</p>
+                                        <p className="text-sm text-zinc-500">Sign up for a free account and create your first Sales in minutes.</p>
                                     </div>
                                     <div>
                                         <h4 className="font-medium text-zinc-300 mb-1">Can I upgrade my plan later?</h4>

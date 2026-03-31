@@ -169,7 +169,7 @@ export default function BusinessSignup() {
                                 <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
                                     <Bot className="w-5 h-5 text-white" />
                                 </div>
-                                <span className="font-bold text-xl">ChatBot AI</span>
+                                <span className="font-bold text-xl">Sales AI</span>
                             </Link>
                         </div>
                     </div>
@@ -217,7 +217,7 @@ export default function BusinessSignup() {
                             <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
                                 <Bot className="w-5 h-5 text-white" />
                             </div>
-                            <span className="font-bold text-xl">ChatBot AI</span>
+                            <span className="font-bold text-xl">Sales AI</span>
                         </Link>
                         <Link href="/">
                             <Button variant="ghost" className="text-zinc-400 hover:text-white hover:bg-zinc-800/50">
@@ -241,7 +241,7 @@ export default function BusinessSignup() {
                             </span>
                         </h1>
                         <p className="text-lg text-zinc-500">
-                            Set up your AI-powered chatbot in 4 simple steps
+                            Set up your AI-powered Sales in 4 simple steps
                         </p>
                     </div>
 
@@ -292,13 +292,13 @@ export default function BusinessSignup() {
                                     <h2 className="text-2xl font-bold">
                                         {step === 1 ? 'Business Information' : 
                                          step === 2 ? 'Create Admin Account' :
-                                         step === 3 ? 'AI Chatbot Settings' : 'Review & Confirm'}
+                                         step === 3 ? 'AI Sales Settings' : 'Review & Confirm'}
                                     </h2>
                                 </div>
                                 <p className="text-zinc-500 ml-9">
                                     {step === 1 ? 'Tell us about your business' :
                                      step === 2 ? 'Set up your administrator credentials' :
-                                     step === 3 ? 'Customize how your AI chatbot behaves' :
+                                     step === 3 ? 'Customize how your AI Sales behaves' :
                                      'Review everything before creating your account'}
                                 </p>
                             </div>

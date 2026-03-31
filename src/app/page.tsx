@@ -72,7 +72,7 @@ export default function Home() {
               <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
                 <Bot className="w-5 h-5 text-white" />
               </div>
-              <span className="font-bold text-xl">ChatBot AI</span>
+              <span className="font-bold text-xl">Sales AI</span>
             </Link>
             <div className="hidden md:flex items-center gap-8">
               <Link href="#features" className="text-sm text-zinc-400 hover:text-white transition-colors">Features</Link>
@@ -118,7 +118,7 @@ export default function Home() {
 
             {/* Headline */}
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              Build AI Chatbots{' '}
+              Build AI Sales Bot{' '}
               <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                 That Convert
               </span>
@@ -203,7 +203,7 @@ export default function Home() {
                       <Bot className="w-4 h-4 text-white" />
                     </div>
                     <div className="bg-zinc-800 rounded-lg rounded-tl-none p-3 max-w-[80%]">
-                      <p className="text-sm text-zinc-300">Absolutely! I can help you set up an AI chatbot for your repair business. Would you like to:</p>
+                      <p className="text-sm text-zinc-300">Absolutely! I can help you set up an AI Sales for your repair business. Would you like to:</p>
                       <ul className="mt-2 space-y-1 text-sm text-zinc-400">
                         <li>• Answer common repair questions</li>
                         <li>• Provide instant quotes</li>
@@ -306,7 +306,7 @@ export default function Home() {
                   </li>
                   <li className="flex items-center gap-3 text-sm">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                    <span className="text-zinc-300">1 chatbot</span>
+                    <span className="text-zinc-300">1 Sales</span>
                   </li>
                   <li className="flex items-center gap-3 text-sm">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
@@ -351,7 +351,7 @@ export default function Home() {
                   </li>
                   <li className="flex items-center gap-3 text-sm">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                    <span className="text-zinc-300">3 chatbots</span>
+                    <span className="text-zinc-300">3 Saless</span>
                   </li>
                   <li className="flex items-center gap-3 text-sm">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
@@ -396,7 +396,7 @@ export default function Home() {
                   </li>
                   <li className="flex items-center gap-3 text-sm">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                    <span className="text-zinc-300">10 chatbots</span>
+                    <span className="text-zinc-300">10 Saless</span>
                   </li>
                   <li className="flex items-center gap-3 text-sm">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
@@ -488,7 +488,7 @@ export default function Home() {
                   <div className="w-3 h-3 rounded-full bg-green-500/20"></div>
                 </div>
                 <pre className="text-zinc-300">
-                  <span className="text-purple-400">curl</span> -X POST \\n                  https://api.chatbot.ai/v1/chat \\n                  -H <span className="text-green-400">&quot;X-API-Key: your-api-key&quot;</span> \\n                  -H <span className="text-green-400">&quot;Content-Type: application/json&quot;</span> \\n                  -d <span className="text-green-400">&apos;{'{'}</span>
+                  <span className="text-purple-400">curl</span> -X POST \\n                  https://api.Sales.ai/v1/chat \\n                  -H <span className="text-green-400">&quot;X-API-Key: your-api-key&quot;</span> \\n                  -H <span className="text-green-400">&quot;Content-Type: application/json&quot;</span> \\n                  -d <span className="text-green-400">&apos;{'{'}</span>
                   <span className="text-blue-400">  &quot;message&quot;</span>: <span className="text-green-400">&quot;Hello!&quot;</span>,
                   <span className="text-blue-400">  &quot;sessionId&quot;</span>: <span className="text-green-400">&quot;unique-id&quot;</span>
                   <span className="text-green-400">{'}'}</span>&apos;
@@ -509,7 +509,7 @@ export default function Home() {
             </span>
           </h2>
           <p className="text-xl text-zinc-400 mb-10">
-            Join thousands of businesses using AI chatbots to engage customers and scale support.
+            Join thousands of businesses using AI Saless to engage customers and scale support.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/business/signup">
@@ -553,10 +553,10 @@ export default function Home() {
                 <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
                   <Bot className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-bold text-xl">ChatBot AI</span>
+                <span className="font-bold text-xl">Sales AI</span>
               </Link>
               <p className="text-sm text-zinc-500">
-                AI-powered chatbots for modern businesses.
+                AI-powered Saless for modern businesses.
               </p>
             </div>
             <div>
@@ -586,7 +586,7 @@ export default function Home() {
           </div>
           <div className="pt-8 border-t border-zinc-900 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-zinc-500">
-              © 2026 ChatBot AI. All rights reserved.
+              © 2026 Sales AI. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
               <Link href="/admin/login" className="text-sm text-zinc-500 hover:text-white transition-colors">

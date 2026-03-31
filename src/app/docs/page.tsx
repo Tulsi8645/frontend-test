@@ -19,7 +19,7 @@ export default function ApiDocsPage() {
         {
             method: 'POST',
             path: '/chat',
-            description: 'Send a message to the AI chatbot and get a response',
+            description: 'Send a message to the AI Sales and get a response',
             headers: ['X-API-Key: your-api-key', 'X-API-Secret: your-api-secret', 'Content-Type: application/json'],
             body: `{
   "message": "Hello, I need help with my order",
@@ -148,7 +148,7 @@ print(data['reply'])`
                             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
                                 <Bot className="w-5 h-5 text-white" />
                             </div>
-                            <span className="font-bold text-xl">ChatBot AI</span>
+                            <span className="font-bold text-xl">Sales AI</span>
                         </Link>
                         <div className="hidden md:flex items-center gap-8">
                             <Link href="/#features" className="text-sm text-zinc-400 hover:text-white transition-colors">Features</Link>
@@ -183,7 +183,7 @@ print(data['reply'])`
                             </span>
                         </h1>
                         <p className="text-xl text-zinc-400 max-w-2xl mx-auto">
-                            Integrate ChatBot AI into your applications with our RESTful API. 
+                            Integrate Sales AI into your applications with our RESTful API. 
                             Build custom chat interfaces and automate workflows.
                         </p>
                     </div>
@@ -336,7 +336,7 @@ print(data['reply'])`
                             </div>
                             
                             <p className="text-zinc-400 mb-6">
-                                Configure webhooks to receive real-time notifications when events occur in your chatbot.
+                                Configure webhooks to receive real-time notifications when events occur in your Sales.
                                 Set up your webhook URL in the <Link href="/admin/settings" className="text-indigo-400 hover:text-indigo-300">settings page</Link>.
                             </p>
 

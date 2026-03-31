@@ -26,7 +26,8 @@ import {
     Smartphone,
     Bot,
     AlertTriangle,
-    ArrowRight
+    ArrowRight,
+    Layers
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -126,7 +127,71 @@ export default function SettingsPage() {
   })();
 </script>`;
 
-    const apiExampleCode = `// Example: Send a message to the chatbot
+    const tsxEmbedCode = `import ChatWidget from '@your-package/chat-widget';
+
+function App() {
+  return (
+    <div>
+      {/* Your app content */}
+      <ChatWidget
+        apiKey="${profile?.apiKey || 'your-api-key'}"
+        apiSecret="${profile?.apiSecret || 'your-api-secret'}"
+        apiUrl="${apiBaseUrl}/chat"
+        socketUrl="${baseUrl}"
+        socketPath="/api/socket"
+        title="${profile?.name || 'Customer Support'}"
+        subtitle="AI Support Bot"
+        greeting="Hello!, How can I help you today?"
+      />
+    </div>
+  );
+}`;
+
+    const jsxEmbedCode = `import ChatWidget from '@your-package/chat-widget';
+
+function App() {
+  return (
+    <div>
+      {/* Your app content */}
+      <ChatWidget
+        apiKey="${profile?.apiKey || 'your-api-key'}"
+        apiSecret="${profile?.apiSecret || 'your-api-secret'}"
+        apiUrl="${apiBaseUrl}/chat"
+        socketUrl="${baseUrl}"
+        socketPath="/api/socket"
+        title="${profile?.name || 'Customer Support'}"
+        subtitle="AI Support Bot"
+        greeting="Hello!, How can I help you today?"
+      />
+    </div>
+  );
+}`;
+
+    const htmlEmbedCode = `<!-- Add this HTML to your page -->
+<div id="chat-widget"></div>
+
+<script>
+  (function() {
+    const chatConfig = {
+      apiKey: '${profile?.apiKey || 'your-api-key'}',
+      apiSecret: '${profile?.apiSecret || 'your-api-secret'}',
+      apiUrl: '${apiBaseUrl}/chat',
+      socketUrl: '${baseUrl}',
+      socketPath: '/api/socket',
+      title: '${profile?.name || 'Customer Support'}',
+      subtitle: 'AI Support Bot',
+      greeting: 'Hello!, How can I help you today?'
+    };
+    
+    var script = document.createElement('script');
+    script.src = '${baseUrl}/chat-widget.js?business=${profile?.slug || 'your-slug'}';
+    script.async = true;
+    script.setAttribute('data-config', JSON.stringify(chatConfig));
+    document.body.appendChild(script);
+  })();
+</script>`;
+
+    const apiExampleCode = `// Example: Send a message to the Sales
 const response = await fetch('${apiBaseUrl}/chat', {
   method: 'POST',
   headers: {
@@ -169,17 +234,17 @@ console.log(data.reply); // AI response`;
             )}
 
             <Tabs defaultValue="api" className="space-y-6">
-                <TabsList className="bg-zinc-900/50 border border-zinc-800">
-                    <TabsTrigger value="api" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-zinc-300">
+                <TabsList className="bg-zinc-900/50 hover:text-emerald-400 border border-zinc-800">
+                    <TabsTrigger value="api" className="data-[state=active]:bg-emerald-600 hover:data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-zinc-300 hover:text-white">
                         API & Credentials
                     </TabsTrigger>
-                    <TabsTrigger value="website" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-zinc-300">
+                    <TabsTrigger value="website" className="data-[state=active]:bg-emerald-600 hover:data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-zinc-300 hover:text-white">
                         Website
                     </TabsTrigger>
-                    <TabsTrigger value="facebook" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-zinc-300">
+                    <TabsTrigger value="facebook" className="data-[state=active]:bg-emerald-600 hover:data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-zinc-300 hover:text-white">
                         Facebook
                     </TabsTrigger>
-                    <TabsTrigger value="whatsapp" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-zinc-300">
+                    <TabsTrigger value="whatsapp" className="data-[state=active]:bg-emerald-600 hover:data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-zinc-300 hover:text-white">
                         WhatsApp
                     </TabsTrigger>
                 </TabsList>
@@ -324,7 +389,7 @@ console.log(data.reply); // AI response`;
                                 <div>
                                     <CardTitle className="text-white">Website Integration</CardTitle>
                                     <CardDescription className="text-zinc-500">
-                                        Add the chatbot to your website
+                                        Add the Sales to your website
                                     </CardDescription>
                                 </div>
                             </div>
@@ -379,6 +444,87 @@ console.log(data.reply); // AI response`;
                                     </Button>
                                 </div>
                             </div>
+
+                            <Separator className="bg-zinc-800" />
+
+                            <div className="space-y-4">
+                                <h3 className="font-semibold text-white">Option 3: React ChatWidget Component</h3>
+                                <p className="text-sm text-zinc-500">
+                                    Use the ChatWidget React component directly in your React/Next.js application for full control and customization.
+                                </p>
+                                
+                                {/* TSX */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+                                            <Code className="w-4 h-4" />
+                                            TypeScript (TSX)
+                                        </h4>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-zinc-400 hover:text-white"
+                                            onClick={() => copyToClipboard(tsxEmbedCode, 'tsx')}
+                                        >
+                                            {copiedField === 'tsx' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                                            Copy
+                                        </Button>
+                                    </div>
+                                    <div className="relative">
+                                        <pre className="bg-zinc-950 text-zinc-300 p-4 rounded-lg overflow-x-auto text-sm font-mono border border-zinc-800">
+                                            {tsxEmbedCode}
+                                        </pre>
+                                    </div>
+                                </div>
+
+                                {/* JSX */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+                                            <Code className="w-4 h-4" />
+                                            JavaScript (JSX)
+                                        </h4>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-zinc-400 hover:text-white"
+                                            onClick={() => copyToClipboard(jsxEmbedCode, 'jsx')}
+                                        >
+                                            {copiedField === 'jsx' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                                            Copy
+                                        </Button>
+                                    </div>
+                                    <div className="relative">
+                                        <pre className="bg-zinc-950 text-zinc-300 p-4 rounded-lg overflow-x-auto text-sm font-mono border border-zinc-800">
+                                            {jsxEmbedCode}
+                                        </pre>
+                                    </div>
+                                </div>
+
+                                {/* HTML */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+                                            <Globe className="w-4 h-4" />
+                                            Plain HTML
+                                        </h4>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-zinc-400 hover:text-white"
+                                            onClick={() => copyToClipboard(htmlEmbedCode, 'html')}
+                                        >
+                                            {copiedField === 'html' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                                            Copy
+                                        </Button>
+                                    </div>
+                                    <div className="relative">
+                                        <pre className="bg-zinc-950 text-zinc-300 p-4 rounded-lg overflow-x-auto text-sm font-mono border border-zinc-800">
+                                            {htmlEmbedCode}
+                                        </pre>
+                                    </div>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -394,7 +540,7 @@ console.log(data.reply); // AI response`;
                                 <div>
                                     <CardTitle className="text-white">Facebook Messenger Integration</CardTitle>
                                     <CardDescription className="text-zinc-500">
-                                        Connect your chatbot to Facebook Messenger
+                                        Connect your Sales to Facebook Messenger
                                     </CardDescription>
                                 </div>
                             </div>

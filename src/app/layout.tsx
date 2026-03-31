@@ -14,13 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ChatBot AI - AI Chatbots for Business",
-  description: "Create intelligent AI chatbots for your business in minutes. Handle customer support, generate leads, and automate conversations 24/7.",
+  title: "Sales AI - AI Bot for Business",
+  description: "Create intelligent AI Sales bot for your business in minutes. Handle customer support, generate leads, and automate conversations 24/7.",
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'ChatBot AI',
+    title: 'Sales AI',
   },
   icons: {
     apple: [

@@ -69,7 +69,7 @@ export default function BusinessLoginPage() {
                             <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
                                 <Bot className="w-5 h-5 text-white" />
                             </div>
-                            <span className="font-bold text-xl">ChatBot AI</span>
+                            <span className="font-bold text-xl">Sales AI</span>
                         </Link>
                         <Link href="/">
                             <Button variant="ghost" className="text-zinc-400 hover:text-white hover:bg-zinc-800/50">
@@ -93,7 +93,7 @@ export default function BusinessLoginPage() {
                             </span>
                         </h1>
                         <p className="text-lg text-zinc-500">
-                            Sign in to manage your business chatbot
+                            Sign in to manage your business Sales
                         </p>
                     </div>
 
