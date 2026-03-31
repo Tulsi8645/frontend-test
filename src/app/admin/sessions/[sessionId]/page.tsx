@@ -111,6 +111,11 @@ export default function SessionDetailPage() {
             }
             const data = await response.json();
             if (data.session) {
+                // Pre-populate processed messages with exact timestamps for deduplication
+                data.session.messages?.forEach((m: ChatMessage) => {
+                    const key = `${m.role}:${m.text}:${new Date(m.timestamp).getTime()}`;
+                    processedMessages.current.add(key);
+                });
                 setSession(data.session);
             }
         } catch (error) {
@@ -143,11 +148,10 @@ export default function SessionDetailPage() {
             });
 
             // Listen for new messages
-            newSocket.on('new-message', (data: ChatMessage & { _id?: string }) => {
-                // Use _id if available (from DB), otherwise create key from content + timestamp
-                const msgKey = data._id 
-                    ? `db:${data._id}` 
-                    : `socket:${data.role}:${data.text}:${new Date(data.timestamp).getTime()}`;
+            newSocket.on('new-message', (data: ChatMessage) => {
+                // Deduplication using exact millisecond timestamp
+                // Socket now broadcasts with same timestamp as saved to DB
+                const msgKey = `${data.role}:${data.text}:${new Date(data.timestamp).getTime()}`;
                 
                 if (processedMessages.current.has(msgKey)) {
                     console.log('Duplicate message ignored:', data);

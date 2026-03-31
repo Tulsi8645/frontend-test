@@ -69,12 +69,11 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                 }
             });
 
-            newSocket.on('new-message', (msg: ChatMessage & { _id?: string; sessionId?: string }) => {
+            newSocket.on('new-message', (msg: ChatMessage & { sessionId?: string }) => {
                 console.log('Received new-message:', msg);
-                // Use _id if available (from DB), otherwise create key from content + timestamp
-                const msgKey = msg._id 
-                    ? `db:${msg._id}` 
-                    : `socket:${msg.role}:${msg.text}:${new Date(msg.timestamp || Date.now()).getTime()}`;
+                // Deduplication using exact millisecond timestamp
+                // Socket now broadcasts with same timestamp as saved to DB
+                const msgKey = `${msg.role}:${msg.text}:${new Date(msg.timestamp || Date.now()).getTime()}`;
                 
                 if (processedMessages.current.has(msgKey)) {
                     console.log('Duplicate message ignored:', msg);
@@ -138,11 +137,17 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
                     // Restore chat history if available
                     if (data.messages && data.messages.length > 0) {
-                        setChatHistory(data.messages.map((m: ChatMessage & { timestamp: string | Date }) => ({
+                        const messages = data.messages.map((m: ChatMessage & { timestamp: string | Date }) => ({
                             role: m.role,
                             text: m.text,
                             timestamp: new Date(m.timestamp),
-                        })));
+                        }));
+                        // Pre-populate processed messages with exact timestamps for deduplication
+                        messages.forEach((m: ChatMessage) => {
+                            const key = `${m.role}:${m.text}:${new Date(m.timestamp || Date.now()).getTime()}`;
+                            processedMessages.current.add(key);
+                        });
+                        setChatHistory(messages);
                     }
                 }
             } catch (error) {
