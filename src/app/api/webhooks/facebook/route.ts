@@ -5,16 +5,15 @@ import Business from '@/models/Business';
 import { 
     sendFacebookMessage, 
     getFacebookUserProfile, 
-    parseWebhookMessages, 
-    VERIFY_TOKEN as FALLBACK_VERIFY_TOKEN
+    parseWebhookMessages
 } from '@/lib/facebook';
 import { generateAIResponse } from '@/lib/ai';
 import { getSocketInstance } from '@/lib/socket';
 import { IChatMessage } from '@/models/ChatSession';
 
 /**
- * GET /api/webhooks/facebook?businessId=xxx
- * Facebook webhook verification endpoint - supports multi-tenancy
+ * GET /api/webhooks/facebook
+ * Facebook webhook verification endpoint - multi-tenancy only
  */
 export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
@@ -22,37 +21,31 @@ export async function GET(req: NextRequest) {
     const mode = searchParams.get('hub.mode');
     const token = searchParams.get('hub.verify_token');
     const challenge = searchParams.get('hub.challenge');
-    const businessId = searchParams.get('businessId');
 
-    console.log('Facebook webhook verification:', { mode, token: token ? '***' : null, challenge, businessId });
+    console.log('Facebook webhook verification:', { mode, token: token ? '***' : null, challenge });
 
-    // Verify the webhook
-    if (mode === 'subscribe' && token && challenge) {
-        await connectDB();
-        
-        let verifyToken = FALLBACK_VERIFY_TOKEN;
-        
-        // If businessId provided, use that business's verify token
-        if (businessId) {
-            const business = await Business.findById(businessId);
-            if (business?.facebookCredentials?.verifyToken) {
-                verifyToken = business.facebookCredentials.verifyToken;
-            }
-        } else {
-            // Try to find business by verify token
-            const business = await Business.findOne({
-                'facebookCredentials.verifyToken': token,
-                'facebookCredentials.enabled': true
-            });
-            if (business) {
-                verifyToken = business.facebookCredentials?.verifyToken || FALLBACK_VERIFY_TOKEN;
-            }
-        }
+    if (mode !== 'subscribe' || !token || !challenge) {
+        return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
+    }
 
-        if (token === verifyToken) {
-            console.log('Facebook webhook verified successfully');
-            return new NextResponse(challenge, { status: 200 });
-        }
+    await connectDB();
+    
+    // Find business by verify token
+    const business = await Business.findOne({
+        'facebookCredentials.verifyToken': token,
+        'facebookCredentials.enabled': true
+    });
+    
+    if (!business) {
+        console.error('No business found with matching verify token');
+        return NextResponse.json({ error: 'Verification failed - no matching business' }, { status: 403 });
+    }
+
+    const verifyToken = business.facebookCredentials?.verifyToken;
+
+    if (token === verifyToken) {
+        console.log('Facebook webhook verified successfully for business:', business._id.toString());
+        return new NextResponse(challenge, { status: 200 });
     }
 
     console.error('Facebook webhook verification failed: token mismatch');
@@ -61,7 +54,7 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/webhooks/facebook
- * Receive messages from Facebook Messenger
+ * Receive messages from Facebook Messenger - multi-tenancy only
  */
 export async function POST(req: NextRequest) {
     try {
@@ -81,9 +74,7 @@ export async function POST(req: NextRequest) {
             });
 
             if (!business) {
-                console.error(`No business found for pageId: ${msg.pageId}, using legacy mode`);
-                // Fallback to legacy mode (single-tenant)
-                await handleFacebookMessageLegacy(msg.pageId, msg.senderId, msg.text);
+                console.error(`No business found for pageId: ${msg.pageId}, skipping message`);
                 continue;
             }
 
@@ -106,7 +97,7 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * Handle incoming Facebook message (multi-tenant mode)
+ * Handle incoming Facebook message (multi-tenant mode only)
  */
 async function handleFacebookMessage(
     pageId: string, 
@@ -211,92 +202,5 @@ async function handleFacebookMessage(
         }
     } catch (error) {
         console.error('Error handling Facebook message:', error);
-    }
-}
-
-/**
- * Legacy handler for single-tenant mode (fallback)
- */
-async function handleFacebookMessageLegacy(pageId: string, senderId: string, text: string) {
-    try {
-        const sessionId = `fb_${pageId}_${senderId}`;
-        
-        let session = await ChatSession.findOne({ sessionId });
-        
-        if (!session) {
-            const profile = await getFacebookUserProfile(senderId);
-            
-            session = new ChatSession({
-                sessionId,
-                channel: 'facebook',
-                externalId: senderId,
-                pageId,
-                status: 'active',
-                messages: [],
-                userInfo: {
-                    name: profile?.name || 'Facebook User',
-                },
-            });
-            console.log('Created new Facebook session (legacy):', sessionId);
-            
-            const io = getSocketInstance();
-            if (io) {
-                io.to('admins').emit('session-created', {
-                    sessionId,
-                    channel: 'facebook',
-                    userName: profile?.name || 'Facebook User',
-                });
-            }
-        }
-
-        const timestamp = new Date();
-        session.messages.push({
-            role: 'user',
-            text,
-            timestamp,
-        });
-        session.lastActivityAt = timestamp;
-        await session.save();
-
-        const io = getSocketInstance();
-        if (io) {
-            io.to('admins').emit('session-updated', {
-                sessionId,
-                message: { role: 'user', text, timestamp },
-            });
-        }
-
-        if (session.status === 'taken_over') {
-            return;
-        }
-
-        const chatHistory = session.messages.map((m: IChatMessage) => ({
-            role: m.role === 'admin' ? 'user' : m.role,
-            text: m.text,
-        }));
-
-        const aiResponse = await generateAIResponse(text, chatHistory);
-
-        if (aiResponse) {
-            const botTimestamp = new Date();
-            session.messages.push({
-                role: 'bot',
-                text: aiResponse,
-                timestamp: botTimestamp,
-            });
-            session.lastActivityAt = botTimestamp;
-            await session.save();
-
-            await sendFacebookMessage(senderId, aiResponse);
-
-            if (io) {
-                io.to('admins').emit('session-updated', {
-                    sessionId,
-                    message: { role: 'bot', text: aiResponse, timestamp: botTimestamp },
-                });
-            }
-        }
-    } catch (error) {
-        console.error('Error handling Facebook message (legacy):', error);
     }
 }

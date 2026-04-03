@@ -819,18 +819,17 @@ console.log(data.reply); // AI response`;
                             <Alert className="bg-amber-950/30 border-amber-800/50">
                                 <AlertTriangle className="h-4 w-4 text-amber-400" />
                                 <AlertDescription className="text-amber-300">
-                                    WhatsApp Business API requires Meta Business verification.
+                                    WhatsApp integration uses Twilio as the API provider.
                                 </AlertDescription>
                             </Alert>
 
                             <div className="space-y-4">
-                                <h3 className="font-semibold text-white">WhatsApp Cloud API Setup</h3>
+                                <h3 className="font-semibold text-white">Twilio WhatsApp Setup</h3>
                                 <ol className="space-y-3 text-sm list-decimal list-inside text-zinc-400">
-                                    <li>Go to <a href="https://business.facebook.com" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline inline-flex items-center gap-1">Meta Business Suite <ExternalLink className="w-3 h-3" /></a></li>
-                                    <li>Create a WhatsApp Business Account</li>
-                                    <li>Get your Phone Number ID and WABA ID</li>
-                                    <li>Generate a Permanent Access Token</li>
-                                    <li>Configure webhook: <code className="bg-zinc-800 px-2 py-1 rounded text-zinc-300 font-mono text-xs">{baseUrl}/api/webhooks/whatsapp</code></li>
+                                    <li>Sign up at <a href="https://www.twilio.com/try-twilio" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline inline-flex items-center gap-1">Twilio <ExternalLink className="w-3 h-3" /></a></li>
+                                    <li>Get your Account SID and Auth Token from the console</li>
+                                    <li>Get your WhatsApp Sandbox number or register a business number</li>
+                                    <li>Configure webhook in Twilio: <code className="bg-zinc-800 px-2 py-1 rounded text-zinc-300 font-mono text-xs">{baseUrl}/api/webhooks/whatsapp</code></li>
                                 </ol>
                             </div>
 
@@ -839,31 +838,32 @@ console.log(data.reply); // AI response`;
                             <div className="space-y-4">
                                 <h3 className="font-semibold text-white">Configuration</h3>
                                 <div className="space-y-2">
-                                    <Label className="text-zinc-400">Phone Number ID</Label>
+                                    <Label className="text-zinc-400">Twilio WhatsApp Number</Label>
                                     <Input 
                                         value={whatsappForm.phoneNumberId}
                                         onChange={(e) => setWhatsappForm(prev => ({ ...prev, phoneNumberId: e.target.value }))}
-                                        placeholder="123456789012345" 
+                                        placeholder="+14155238886" 
                                         className="bg-zinc-950 border-zinc-800 text-white" 
                                     />
+                                    <p className="text-xs text-zinc-500">Your Twilio WhatsApp number (e.g., +1 415 523 8886)</p>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-zinc-400">WABA ID (WhatsApp Business Account ID)</Label>
+                                    <Label className="text-zinc-400">Twilio Account SID</Label>
                                     <Input 
                                         value={whatsappForm.wabaId}
                                         onChange={(e) => setWhatsappForm(prev => ({ ...prev, wabaId: e.target.value }))}
-                                        placeholder="123456789012345" 
-                                        className="bg-zinc-950 border-zinc-800 text-white" 
+                                        placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" 
+                                        className="bg-zinc-950 border-zinc-800 text-white font-mono" 
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-zinc-400">Access Token</Label>
+                                    <Label className="text-zinc-400">Twilio Auth Token</Label>
                                     <Input 
                                         type="password"
                                         value={whatsappForm.accessToken}
                                         onChange={(e) => setWhatsappForm(prev => ({ ...prev, accessToken: e.target.value }))}
-                                        placeholder={profile?.whatsappCredentials?.accessToken ? '(Token saved - enter new to update)' : 'EAAxxxxx...'} 
-                                        className="bg-zinc-950 border-zinc-800 text-white" 
+                                        placeholder={profile?.whatsappCredentials?.accessToken ? '(Token saved - enter new to update)' : 'your_auth_token'} 
+                                        className="bg-zinc-950 border-zinc-800 text-white font-mono" 
                                     />
                                 </div>
                                 <div className="flex items-center gap-4 pt-2">
@@ -974,6 +974,46 @@ console.log(data.reply); // AI response`;
                         </CardContent>
                     </Card>
                 </TabsContent>
+
+                {/* Chat Widget Settings Card */}
+                <Card className="mt-6 bg-zinc-900/50 border-zinc-800 backdrop-blur">
+                    <CardHeader>
+                        <CardTitle className="text-white">Chat Widget Settings</CardTitle>
+                        <CardDescription className="text-zinc-500">
+                            Configure how your chat widget appears on your website
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <Label className="text-zinc-400">AI Enabled</Label>
+                                <div className="mt-1">
+                                    <Badge className={profile?.settings?.enableAI ? 'bg-emerald-600/20 text-emerald-400' : 'bg-zinc-700 text-zinc-400'}>
+                                        {profile?.settings?.enableAI ? 'Yes' : 'No'}
+                                    </Badge>
+                                </div>
+                            </div>
+                            <div>
+                                <Label className="text-zinc-400">Human Handover</Label>
+                                <div className="mt-1">
+                                    <Badge className={profile?.settings?.allowHumanHandover ? 'bg-emerald-600/20 text-emerald-400' : 'bg-zinc-700 text-zinc-400'}>
+                                        {profile?.settings?.allowHumanHandover ? 'Enabled' : 'Disabled'}
+                                    </Badge>
+                                </div>
+                            </div>
+                            <div>
+                                <Label className="text-zinc-400">Theme Color</Label>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <div 
+                                        className="w-6 h-6 rounded border border-zinc-600"
+                                        style={{ backgroundColor: profile?.settings?.themeColor || '#4f46e5' }}
+                                    />
+                                    <span className="text-sm text-zinc-300">{profile?.settings?.themeColor || '#4f46e5'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
             </Tabs>
         </div>
     );

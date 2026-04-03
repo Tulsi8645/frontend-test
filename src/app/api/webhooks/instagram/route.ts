@@ -7,54 +7,51 @@ import {
     parseInstagramWebhook, 
     sendInstagramMessage,
     getInstagramUserProfile,
-    INSTAGRAM_ACCESS_TOKEN,
 } from '@/lib/instagram';
 import { generateAIResponse } from '@/lib/ai';
 import { getSocketInstance } from '@/lib/socket';
 import { IChatMessage } from '@/models/ChatSession';
 
-const FALLBACK_VERIFY_TOKEN = process.env.FACEBOOK_VERIFY_TOKEN || ''; // Reuses same token as Facebook
-
 /**
- * GET /api/webhooks/instagram?businessId=xxx
- * Instagram webhook verification - supports multi-tenancy
+ * GET /api/webhooks/instagram
+ * Instagram webhook verification - multi-tenancy only
  */
 export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const mode = searchParams.get('hub.mode');
     const token = searchParams.get('hub.verify_token');
     const challenge = searchParams.get('hub.challenge');
-    const businessId = searchParams.get('businessId');
 
-    console.log('Instagram webhook verification:', { mode, token: token ? '***' : null, challenge, businessId });
+    console.log('Instagram webhook verification:', { mode, token: token ? '***' : null, challenge });
+
+    if (!mode || !token || !challenge) {
+        return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
+    }
 
     await connectDB();
     
-    let verifyToken = FALLBACK_VERIFY_TOKEN;
+    // Find business by verify token (Instagram uses same verify token as Facebook)
+    const business = await Business.findOne({
+        'facebookCredentials.verifyToken': token,
+        'instagramCredentials.enabled': true
+    });
     
-    // If businessId provided, use that business's verify token
-    if (businessId) {
-        const business = await Business.findById(businessId);
-        if (business?.facebookCredentials?.verifyToken) {
-            verifyToken = business.facebookCredentials.verifyToken;
-        }
-    } else {
-        // Try to find business by verify token
-        const business = await Business.findOne({
-            'facebookCredentials.verifyToken': token,
-            'instagramCredentials.enabled': true
-        });
-        if (business) {
-            verifyToken = business.facebookCredentials?.verifyToken || FALLBACK_VERIFY_TOKEN;
-        }
+    if (!business) {
+        console.error('No business found with matching verify token for Instagram');
+        return NextResponse.json({ error: 'Verification failed - no matching business' }, { status: 403 });
     }
 
-    if (mode && token && challenge) {
-        const result = verifyInstagramWebhook(mode, token, challenge, verifyToken);
-        if (result.success) {
-            console.log('Instagram webhook verified successfully');
-            return new NextResponse(result.challenge, { status: 200 });
-        }
+    const verifyToken = business.facebookCredentials?.verifyToken;
+    
+    if (!verifyToken) {
+        console.error('Business has no verify token configured');
+        return NextResponse.json({ error: 'Verification failed - no verify token' }, { status: 403 });
+    }
+    
+    const result = verifyInstagramWebhook(mode, token, challenge, verifyToken);
+    if (result.success) {
+        console.log('Instagram webhook verified successfully for business:', business._id.toString());
+        return new NextResponse(result.challenge, { status: 200 });
     }
 
     console.error('Instagram webhook verification failed');
@@ -63,7 +60,7 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/webhooks/instagram
- * Receive messages from Instagram - supports multi-tenancy
+ * Receive messages from Instagram - multi-tenancy only
  */
 export async function POST(req: NextRequest) {
     try {
@@ -90,16 +87,15 @@ export async function POST(req: NextRequest) {
             });
 
             if (!business) {
-                console.error(`No business found for Instagram account: ${msg.accountId}, using legacy mode`);
-                // Fallback to legacy mode
-                await handleInstagramMessageLegacy(msg.senderId, msg.text);
+                console.error(`No business found for Instagram account: ${msg.accountId}, skipping message`);
                 continue;
             }
 
             await handleInstagramMessage(
                 msg.senderId, 
                 msg.text,
-                business._id.toString()
+                business._id.toString(),
+                business.facebookCredentials?.pageAccessToken || ''
             );
         }
 
@@ -111,12 +107,17 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * Handle incoming Instagram message (multi-tenant mode)
+ * Handle incoming Instagram message (multi-tenant mode only)
  */
-async function handleInstagramMessage(senderId: string, text: string, businessId: string) {
+async function handleInstagramMessage(
+    senderId: string, 
+    text: string, 
+    businessId: string,
+    accessToken: string
+) {
     try {
-        // Get user profile
-        const profile = await getInstagramUserProfile(senderId);
+        // Get user profile using business's access token
+        const profile = await getInstagramUserProfile(senderId, accessToken);
         
         // Find or create session for this Instagram user (scoped to business)
         const sessionId = `ig_${businessId}_${senderId}`;
@@ -196,8 +197,8 @@ async function handleInstagramMessage(senderId: string, text: string, businessId
             session.lastActivityAt = botTimestamp;
             await session.save();
 
-            // Send to Instagram
-            await sendInstagramMessage(senderId, aiResponse);
+            // Send to Instagram using business's access token
+            await sendInstagramMessage(senderId, aiResponse, accessToken);
 
             // Notify admins
             if (io) {
@@ -210,104 +211,5 @@ async function handleInstagramMessage(senderId: string, text: string, businessId
         }
     } catch (error) {
         console.error('Error handling Instagram message:', error);
-    }
-}
-
-/**
- * Legacy handler for single-tenant mode (fallback)
- */
-async function handleInstagramMessageLegacy(senderId: string, text: string) {
-    try {
-        // Get user profile
-        const profile = await getInstagramUserProfile(senderId);
-        
-        // Find or create session for this Instagram user
-        const sessionId = `ig_${senderId}`;
-        
-        let session = await ChatSession.findOne({ sessionId });
-        
-        if (!session) {
-            // Create new session
-            session = new ChatSession({
-                sessionId,
-                channel: 'instagram',
-                externalId: senderId,
-                status: 'active',
-                messages: [],
-                userInfo: {
-                    name: profile?.username || profile?.name || 'Instagram User',
-                    profilePic: profile?.profilePic,
-                },
-            });
-            console.log('Created new Instagram session (legacy):', sessionId, 'for user:', profile?.username || 'unknown');
-            
-            // Emit session-created event for notifications
-            const io = getSocketInstance();
-            if (io) {
-                io.to('admins').emit('session-created', {
-                    sessionId,
-                    channel: 'instagram',
-                    userName: profile?.username || profile?.name || 'Instagram User',
-                });
-            }
-        }
-
-        // Add user message
-        const timestamp = new Date();
-        session.messages.push({
-            role: 'user',
-            text,
-            timestamp,
-        });
-        session.lastActivityAt = timestamp;
-        await session.save();
-
-        // Notify admins via socket
-        const io = getSocketInstance();
-        if (io) {
-            io.to('admins').emit('session-updated', {
-                sessionId,
-                message: { role: 'user', text, timestamp },
-            });
-        }
-
-        // If session is taken over, don't send AI response
-        if (session.status === 'taken_over') {
-            console.log('Instagram session taken over, waiting for admin response');
-            return;
-        }
-
-        // Generate AI response
-        const chatHistory = session.messages.map((m: IChatMessage) => ({
-            role: m.role === 'admin' ? 'user' : m.role,
-            text: m.text,
-        }));
-
-        const aiResponse = await generateAIResponse(text, chatHistory);
-
-        if (aiResponse) {
-            // Add bot message to session
-            const botTimestamp = new Date();
-            session.messages.push({
-                role: 'bot',
-                text: aiResponse,
-                timestamp: botTimestamp,
-            });
-            session.lastActivityAt = botTimestamp;
-            await session.save();
-
-            // Send to Instagram
-            await sendInstagramMessage(senderId, aiResponse);
-
-            // Notify admins
-            if (io) {
-                io.to('admins').emit('session-updated', {
-                    sessionId,
-                    message: { role: 'bot', text: aiResponse, timestamp: botTimestamp },
-                });
-            }
-        }
-    } catch (error) {
-        console.error('Error handling Instagram message (legacy):', error);
     }
 }

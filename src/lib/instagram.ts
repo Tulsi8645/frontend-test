@@ -50,16 +50,20 @@ interface InstagramWebhookBody {
 }
 
 /**
- * Send Instagram message via Facebook Graph API
+ * Send Instagram message via Facebook Graph API (multi-tenant)
  */
-export async function sendInstagramMessage(recipientId: string, text: string): Promise<boolean> {
+export async function sendInstagramMessage(
+    recipientId: string, 
+    text: string, 
+    accessToken: string
+): Promise<boolean> {
     try {
-        if (!INSTAGRAM_ACCESS_TOKEN) {
-            console.error('Instagram access token not configured');
+        if (!accessToken) {
+            console.error('Instagram access token not provided');
             return false;
         }
 
-        const url = `${BASE_URL}/me/messages?access_token=${INSTAGRAM_ACCESS_TOKEN}`;
+        const url = `${BASE_URL}/me/messages?access_token=${accessToken}`;
 
         const response = await fetch(url, {
             method: 'POST',
@@ -86,19 +90,22 @@ export async function sendInstagramMessage(recipientId: string, text: string): P
 }
 
 /**
- * Get Instagram user profile info
+ * Get Instagram user profile info (multi-tenant)
  */
-export async function getInstagramUserProfile(userId: string): Promise<{
+export async function getInstagramUserProfile(
+    userId: string, 
+    accessToken: string
+): Promise<{
     username?: string;
     profilePic?: string;
     name?: string;
 } | null> {
     try {
-        if (!INSTAGRAM_ACCESS_TOKEN) {
+        if (!accessToken) {
             return null;
         }
 
-        const url = `${BASE_URL}/${userId}?fields=username,profile_pic,name&access_token=${INSTAGRAM_ACCESS_TOKEN}`;
+        const url = `${BASE_URL}/${userId}?fields=username,profile_pic,name&access_token=${accessToken}`;
         
         const response = await fetch(url);
         
@@ -144,6 +151,7 @@ export function parseInstagramWebhook(body: InstagramWebhookBody): {
     messageId: string;
     timestamp: number;
     username?: string;
+    accountId: string;
 }[] {
     const messages: {
         senderId: string;
@@ -151,6 +159,7 @@ export function parseInstagramWebhook(body: InstagramWebhookBody): {
         messageId: string;
         timestamp: number;
         username?: string;
+        accountId: string;
     }[] = [];
 
     if (body.object !== 'instagram') {
@@ -159,6 +168,7 @@ export function parseInstagramWebhook(body: InstagramWebhookBody): {
 
     for (const entry of body.entry) {
         const messaging = entry.messaging || entry.standby || [];
+        const accountId = entry.id; // Instagram account ID from entry
         
         for (const event of messaging) {
             // Handle text messages
@@ -168,6 +178,7 @@ export function parseInstagramWebhook(body: InstagramWebhookBody): {
                     text: event.message.text,
                     messageId: event.message.mid,
                     timestamp: event.timestamp,
+                    accountId,
                 });
             }
             
@@ -178,6 +189,7 @@ export function parseInstagramWebhook(body: InstagramWebhookBody): {
                     text: event.postback.payload,
                     messageId: event.postback.mid,
                     timestamp: event.timestamp,
+                    accountId,
                 });
             }
         }

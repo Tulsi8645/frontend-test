@@ -123,10 +123,30 @@ app.prepare().then(() => {
                     // Send to external channel if not website
                     if (session.channel === 'facebook' && session.externalId) {
                         await sendFacebookMessage(session.externalId, message);
-                    } else if (session.channel === 'whatsapp' && session.externalId) {
-                        await sendWhatsAppMessage(session.externalId, message);
-                    } else if (session.channel === 'instagram' && session.externalId) {
-                        await sendInstagramMessage(session.externalId, message);
+                    } else if (session.channel === 'whatsapp' && session.externalId && session.businessId) {
+                        // Fetch business credentials for WhatsApp
+                        const Business = (await import('./src/models/Business')).default;
+                        const business = await Business.findById(session.businessId);
+                        if (business?.whatsappCredentials) {
+                            await sendWhatsAppMessage(
+                                session.externalId, 
+                                message,
+                                business.whatsappCredentials.wabaId || '', // Account SID
+                                business.whatsappCredentials.accessToken || '', // Auth Token
+                                business.whatsappCredentials.phoneNumberId || '' // From Number
+                            );
+                        }
+                    } else if (session.channel === 'instagram' && session.externalId && session.businessId) {
+                        // Fetch business credentials for Instagram (uses Facebook token)
+                        const Business = (await import('./src/models/Business')).default;
+                        const business = await Business.findById(session.businessId);
+                        if (business?.facebookCredentials?.pageAccessToken) {
+                            await sendInstagramMessage(
+                                session.externalId, 
+                                message,
+                                business.facebookCredentials.pageAccessToken
+                            );
+                        }
                     }
 
                     // Make sure admin is in the session room

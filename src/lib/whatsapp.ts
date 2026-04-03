@@ -1,39 +1,41 @@
 /**
  * WhatsApp Business API Client via Twilio
- * Handles sending messages through Twilio's WhatsApp API
+ * Handles sending messages through Twilio's WhatsApp API (multi-tenant)
  */
-
-const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
-const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
-const TWILIO_WHATSAPP_NUMBER = process.env.TWILIO_WHATSAPP_NUMBER || ''; // Format: whatsapp:+1234567890
 
 /**
- * Send WhatsApp message via Twilio
+ * Send WhatsApp message via Twilio using business credentials
  */
-export async function sendWhatsAppMessage(to: string, text: string): Promise<boolean> {
+export async function sendWhatsAppMessage(
+    to: string, 
+    text: string, 
+    accountSid: string,
+    authToken: string,
+    fromNumber: string
+): Promise<boolean> {
     try {
-        if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_WHATSAPP_NUMBER) {
-            console.error('Twilio credentials not configured');
+        if (!accountSid || !authToken || !fromNumber) {
+            console.error('Twilio credentials not provided');
             return false;
         }
 
         // Format phone number (ensure it has whatsapp: prefix)
         const toNumber = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`;
-        const fromNumber = TWILIO_WHATSAPP_NUMBER.startsWith('whatsapp:') 
-            ? TWILIO_WHATSAPP_NUMBER 
-            : `whatsapp:${TWILIO_WHATSAPP_NUMBER}`;
+        const formattedFromNumber = fromNumber.startsWith('whatsapp:') 
+            ? fromNumber 
+            : `whatsapp:${fromNumber}`;
 
-        const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
+        const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
         
         const response = await fetch(url, {
             method: 'POST',
             headers: {
-                'Authorization': 'Basic ' + Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64'),
+                'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: new URLSearchParams({
                 To: toNumber,
-                From: fromNumber,
+                From: formattedFromNumber,
                 Body: text,
             }),
         });
@@ -89,5 +91,3 @@ export function parseTwilioWebhook(body: TwilioWebhookBody): {
         timestamp: Date.now(),
     };
 }
-
-export { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_NUMBER };
