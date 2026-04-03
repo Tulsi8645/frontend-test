@@ -8,10 +8,12 @@ interface ChatMessage {
 
 /**
  * Generate AI response using Gemini
+ * Supports multi-tenancy with business-specific knowledge
  */
 export async function generateAIResponse(
     message: string,
-    chatHistory: ChatMessage[]
+    chatHistory: ChatMessage[],
+    businessId?: string
 ): Promise<string | null> {
     try {
         const apiKey = process.env.GEMINI_API_KEY;
@@ -20,8 +22,9 @@ export async function generateAIResponse(
             return null;
         }
 
-        // Fetch knowledge for AI response
-        const knowledgeEntries = await Knowledge.find({ isActive: true }).sort({ priority: -1 });
+        // Fetch knowledge for AI response (business-specific if businessId provided)
+        const knowledgeQuery = businessId ? { businessId, isActive: true } : { isActive: true };
+        const knowledgeEntries = await Knowledge.find(knowledgeQuery).sort({ priority: -1 });
         const knowledge = knowledgeToJSONFormat(knowledgeEntries);
 
         // Build conversation context

@@ -62,12 +62,12 @@ export interface TwilioWebhookBody {
     WaId: string;  // WhatsApp ID (phone number)
     SmsStatus: string;
     Body: string;
-    To: string;
+    To: string;    // Format: whatsapp:+1234567890 (destination number)
+    From: string;  // Format: whatsapp:+1234567890 (source number)
     NumSegments: string;
     ReferralNumMedia: string;
     MessageSid: string;
     AccountSid: string;
-    From: string;  // Format: whatsapp:+1234567890
     ApiVersion: string;
 }
 
@@ -76,12 +76,14 @@ export interface TwilioWebhookBody {
  */
 export function parseTwilioWebhook(body: TwilioWebhookBody): {
     from: string;
+    to: string;
     text: string;
     profileName: string;
     timestamp: number;
 } {
     return {
         from: body.From.replace('whatsapp:', ''),
+        to: body.To.replace('whatsapp:', ''),
         text: body.Body,
         profileName: body.ProfileName || 'WhatsApp User',
         timestamp: Date.now(),

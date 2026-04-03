@@ -25,6 +25,26 @@ export interface IBusiness extends Document {
         customWelcomeMessage?: string;
         themeColor?: string;
     };
+    // Facebook Messenger credentials (per-business)
+    facebookCredentials?: {
+        pageId?: string;
+        pageAccessToken?: string;
+        verifyToken?: string;
+        appSecret?: string;
+        enabled: boolean;
+    };
+    // Instagram credentials (per-business)
+    instagramCredentials?: {
+        instagramAccountId?: string;
+        enabled: boolean;
+    };
+    // WhatsApp credentials (per-business)
+    whatsappCredentials?: {
+        phoneNumberId?: string;
+        wabaId?: string;
+        accessToken?: string;
+        enabled: boolean;
+    };
     createdAt: Date;
     updatedAt: Date;
     verifiedAt?: Date;
@@ -109,6 +129,26 @@ const BusinessSchema = new Schema<IBusiness>(
         verifiedBy: {
             type: Schema.Types.ObjectId,
             ref: 'User',
+        },
+        // Facebook Messenger credentials
+        facebookCredentials: {
+            pageId: { type: String },
+            pageAccessToken: { type: String },
+            verifyToken: { type: String },
+            appSecret: { type: String },
+            enabled: { type: Boolean, default: false },
+        },
+        // Instagram credentials
+        instagramCredentials: {
+            instagramAccountId: { type: String },
+            enabled: { type: Boolean, default: false },
+        },
+        // WhatsApp credentials
+        whatsappCredentials: {
+            phoneNumberId: { type: String },
+            wabaId: { type: String },
+            accessToken: { type: String },
+            enabled: { type: Boolean, default: false },
         },
     },
     {

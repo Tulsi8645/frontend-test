@@ -32,6 +32,7 @@ import {
 import { toast } from 'sonner';
 
 interface BusinessProfile {
+    _id?: string;
     name: string;
     slug: string;
     email: string;
@@ -44,6 +45,22 @@ interface BusinessProfile {
         customWelcomeMessage?: string;
         themeColor?: string;
     };
+    facebookCredentials?: {
+        pageId?: string;
+        pageAccessToken?: string;
+        verifyToken?: string;
+        enabled?: boolean;
+    };
+    whatsappCredentials?: {
+        phoneNumberId?: string;
+        wabaId?: string;
+        accessToken?: string;
+        enabled?: boolean;
+    };
+    instagramCredentials?: {
+        instagramAccountId?: string;
+        enabled?: boolean;
+    };
 }
 
 export default function SettingsPage() {
@@ -54,6 +71,31 @@ export default function SettingsPage() {
     const [copiedField, setCopiedField] = useState<string | null>(null);
     const [regenerating, setRegenerating] = useState(false);
 
+    // Facebook form state
+    const [facebookForm, setFacebookForm] = useState({
+        pageId: '',
+        pageAccessToken: '',
+        verifyToken: '',
+        enabled: false,
+    });
+    const [savingFacebook, setSavingFacebook] = useState(false);
+
+    // WhatsApp form state
+    const [whatsappForm, setWhatsappForm] = useState({
+        phoneNumberId: '',
+        wabaId: '',
+        accessToken: '',
+        enabled: false,
+    });
+    const [savingWhatsapp, setSavingWhatsapp] = useState(false);
+
+    // Instagram form state
+    const [instagramForm, setInstagramForm] = useState({
+        instagramAccountId: '',
+        enabled: false,
+    });
+    const [savingInstagram, setSavingInstagram] = useState(false);
+
     const baseUrl = typeof window !== 'undefined' 
         ? `${window.location.protocol}//${window.location.host}` 
         : 'https://your-domain.com';
@@ -63,6 +105,31 @@ export default function SettingsPage() {
     useEffect(() => {
         fetchProfile();
     }, []);
+
+    useEffect(() => {
+        if (profile?.facebookCredentials) {
+            setFacebookForm({
+                pageId: profile.facebookCredentials.pageId || '',
+                pageAccessToken: '', // Don't populate sensitive data
+                verifyToken: profile.facebookCredentials.verifyToken || '',
+                enabled: profile.facebookCredentials.enabled || false,
+            });
+        }
+        if (profile?.whatsappCredentials) {
+            setWhatsappForm({
+                phoneNumberId: profile.whatsappCredentials.phoneNumberId || '',
+                wabaId: profile.whatsappCredentials.wabaId || '',
+                accessToken: '', // Don't populate sensitive data
+                enabled: profile.whatsappCredentials.enabled || false,
+            });
+        }
+        if (profile?.instagramCredentials) {
+            setInstagramForm({
+                instagramAccountId: profile.instagramCredentials.instagramAccountId || '',
+                enabled: profile.instagramCredentials.enabled || false,
+            });
+        }
+    }, [profile]);
 
     const fetchProfile = async () => {
         try {
@@ -106,6 +173,102 @@ export default function SettingsPage() {
             setError('Failed to regenerate API keys');
         } finally {
             setRegenerating(false);
+        }
+    };
+
+    const saveFacebookCredentials = async () => {
+        setSavingFacebook(true);
+        try {
+            const response = await fetch('/api/admin/business/facebook-credentials', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(facebookForm),
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                toast.success('Facebook credentials saved successfully');
+                // Update profile with returned data (without sensitive tokens)
+                setProfile(prev => prev ? {
+                    ...prev,
+                    facebookCredentials: {
+                        ...prev.facebookCredentials,
+                        pageId: data.credentials.pageId,
+                        verifyToken: data.credentials.verifyToken,
+                        enabled: data.credentials.enabled,
+                    }
+                } : null);
+            } else {
+                const error = await response.json();
+                toast.error(error.error || 'Failed to save Facebook credentials');
+            }
+        } catch (err) {
+            toast.error('Failed to save Facebook credentials');
+        } finally {
+            setSavingFacebook(false);
+        }
+    };
+
+    const saveWhatsappCredentials = async () => {
+        setSavingWhatsapp(true);
+        try {
+            const response = await fetch('/api/admin/business/whatsapp-credentials', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(whatsappForm),
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                toast.success('WhatsApp credentials saved successfully');
+                setProfile(prev => prev ? {
+                    ...prev,
+                    whatsappCredentials: {
+                        ...prev.whatsappCredentials,
+                        phoneNumberId: data.credentials.phoneNumberId,
+                        wabaId: data.credentials.wabaId,
+                        enabled: data.credentials.enabled,
+                    }
+                } : null);
+            } else {
+                const error = await response.json();
+                toast.error(error.error || 'Failed to save WhatsApp credentials');
+            }
+        } catch (err) {
+            toast.error('Failed to save WhatsApp credentials');
+        } finally {
+            setSavingWhatsapp(false);
+        }
+    };
+
+    const saveInstagramCredentials = async () => {
+        setSavingInstagram(true);
+        try {
+            const response = await fetch('/api/admin/business/instagram-credentials', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(instagramForm),
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                toast.success('Instagram credentials saved successfully');
+                setProfile(prev => prev ? {
+                    ...prev,
+                    instagramCredentials: {
+                        ...prev.instagramCredentials,
+                        instagramAccountId: data.credentials.instagramAccountId,
+                        enabled: data.credentials.enabled,
+                    }
+                } : null);
+            } else {
+                const error = await response.json();
+                toast.error(error.error || 'Failed to save Instagram credentials');
+            }
+        } catch (err) {
+            toast.error('Failed to save Instagram credentials');
+        } finally {
+            setSavingInstagram(false);
         }
     };
 
@@ -246,6 +409,9 @@ console.log(data.reply); // AI response`;
                     </TabsTrigger>
                     <TabsTrigger value="whatsapp" className="data-[state=active]:bg-emerald-600 hover:data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-zinc-300 hover:text-white">
                         WhatsApp
+                    </TabsTrigger>
+                    <TabsTrigger value="instagram" className="data-[state=active]:bg-emerald-600 hover:data-[state=active]:bg-emerald-700 data-[state=active]:text-white text-zinc-300 hover:text-white">
+                        Instagram
                     </TabsTrigger>
                 </TabsList>
 
@@ -540,9 +706,12 @@ console.log(data.reply); // AI response`;
                                 <div>
                                     <CardTitle className="text-white">Facebook Messenger Integration</CardTitle>
                                     <CardDescription className="text-zinc-500">
-                                        Connect your Sales to Facebook Messenger
+                                        Connect your Sales Bot to Facebook Messenger
                                     </CardDescription>
                                 </div>
+                                {facebookForm.enabled && (
+                                    <Badge className="bg-green-600/20 text-green-400 border-green-600/50">Enabled</Badge>
+                                )}
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-6">
@@ -560,7 +729,7 @@ console.log(data.reply); // AI response`;
                                     <li>Add &quot;Messenger&quot; product to your app</li>
                                     <li>Connect your Facebook Business Page</li>
                                     <li>Configure webhook URL: <code className="bg-zinc-800 px-2 py-1 rounded text-zinc-300 font-mono text-xs">{baseUrl}/api/webhooks/facebook</code></li>
-                                    <li>Get your Page Access Token and add it below</li>
+                                    <li>Use this Verify Token: {facebookForm.verifyToken ? <code className="bg-emerald-900/50 px-2 py-1 rounded text-emerald-300 font-mono text-xs">{facebookForm.verifyToken}</code> : <span className="text-zinc-500 italic">(will be generated)</span>}</li>
                                 </ol>
                             </div>
 
@@ -570,16 +739,58 @@ console.log(data.reply); // AI response`;
                                 <h3 className="font-semibold text-white">Configuration</h3>
                                 <div className="space-y-2">
                                     <Label className="text-zinc-400">Facebook Page ID</Label>
-                                    <Input placeholder="123456789012345" className="bg-zinc-950 border-zinc-800 text-white" />
+                                    <Input 
+                                        value={facebookForm.pageId}
+                                        onChange={(e) => setFacebookForm(prev => ({ ...prev, pageId: e.target.value }))}
+                                        placeholder="123456789012345" 
+                                        className="bg-zinc-950 border-zinc-800 text-white" 
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-zinc-400">Page Access Token</Label>
-                                    <Input type="password" placeholder="EAAxxxxx..." className="bg-zinc-950 border-zinc-800 text-white" />
+                                    <Input 
+                                        type="password" 
+                                        value={facebookForm.pageAccessToken}
+                                        onChange={(e) => setFacebookForm(prev => ({ ...prev, pageAccessToken: e.target.value }))}
+                                        placeholder={profile?.facebookCredentials?.pageAccessToken ? '(Token saved - enter new to update)' : 'EAAxxxxx...'} 
+                                        className="bg-zinc-950 border-zinc-800 text-white" 
+                                    />
                                 </div>
-                                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                                    <Facebook className="w-4 h-4 mr-2" />
-                                    Connect Facebook Messenger
-                                </Button>
+                                <div className="space-y-2">
+                                    <Label className="text-zinc-400">Verify Token</Label>
+                                    <Input 
+                                        value={facebookForm.verifyToken}
+                                        onChange={(e) => setFacebookForm(prev => ({ ...prev, verifyToken: e.target.value }))}
+                                        placeholder="my_custom_verify_token_123" 
+                                        className="bg-zinc-950 border-zinc-800 text-white font-mono" 
+                                    />
+                                    <p className="text-xs text-zinc-500">
+                                        Use this exact token when configuring the webhook in Facebook Developer Console
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-4 pt-2">
+                                    <Button 
+                                        onClick={saveFacebookCredentials}
+                                        disabled={savingFacebook}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                                    >
+                                        {savingFacebook ? 'Saving...' : (
+                                            <>
+                                                <Facebook className="w-4 h-4 mr-2" />
+                                                {facebookForm.enabled ? 'Update Facebook Settings' : 'Connect Facebook Messenger'}
+                                            </>
+                                        )}
+                                    </Button>
+                                    {facebookForm.enabled && (
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setFacebookForm(prev => ({ ...prev, enabled: false }))}
+                                            className="border-zinc-700 text-zinc-300 hover:text-white"
+                                        >
+                                            Disable Integration
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -599,6 +810,9 @@ console.log(data.reply); // AI response`;
                                         Connect via WhatsApp Business API
                                     </CardDescription>
                                 </div>
+                                {whatsappForm.enabled && (
+                                    <Badge className="bg-green-600/20 text-green-400 border-green-600/50">Enabled</Badge>
+                                )}
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-6">
@@ -626,16 +840,136 @@ console.log(data.reply); // AI response`;
                                 <h3 className="font-semibold text-white">Configuration</h3>
                                 <div className="space-y-2">
                                     <Label className="text-zinc-400">Phone Number ID</Label>
-                                    <Input placeholder="123456789012345" className="bg-zinc-950 border-zinc-800 text-white" />
+                                    <Input 
+                                        value={whatsappForm.phoneNumberId}
+                                        onChange={(e) => setWhatsappForm(prev => ({ ...prev, phoneNumberId: e.target.value }))}
+                                        placeholder="123456789012345" 
+                                        className="bg-zinc-950 border-zinc-800 text-white" 
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-zinc-400">WABA ID (WhatsApp Business Account ID)</Label>
+                                    <Input 
+                                        value={whatsappForm.wabaId}
+                                        onChange={(e) => setWhatsappForm(prev => ({ ...prev, wabaId: e.target.value }))}
+                                        placeholder="123456789012345" 
+                                        className="bg-zinc-950 border-zinc-800 text-white" 
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-zinc-400">Access Token</Label>
-                                    <Input type="password" placeholder="EAAxxxxx..." className="bg-zinc-950 border-zinc-800 text-white" />
+                                    <Input 
+                                        type="password"
+                                        value={whatsappForm.accessToken}
+                                        onChange={(e) => setWhatsappForm(prev => ({ ...prev, accessToken: e.target.value }))}
+                                        placeholder={profile?.whatsappCredentials?.accessToken ? '(Token saved - enter new to update)' : 'EAAxxxxx...'} 
+                                        className="bg-zinc-950 border-zinc-800 text-white" 
+                                    />
                                 </div>
-                                <Button className="bg-green-600 hover:bg-green-700 text-white">
-                                    <Smartphone className="w-4 h-4 mr-2" />
-                                    Connect WhatsApp
-                                </Button>
+                                <div className="flex items-center gap-4 pt-2">
+                                    <Button 
+                                        onClick={saveWhatsappCredentials}
+                                        disabled={savingWhatsapp}
+                                        className="bg-green-600 hover:bg-green-700 text-white"
+                                    >
+                                        {savingWhatsapp ? 'Saving...' : (
+                                            <>
+                                                <Smartphone className="w-4 h-4 mr-2" />
+                                                {whatsappForm.enabled ? 'Update WhatsApp Settings' : 'Connect WhatsApp'}
+                                            </>
+                                        )}
+                                    </Button>
+                                    {whatsappForm.enabled && (
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setWhatsappForm(prev => ({ ...prev, enabled: false }))}
+                                            className="border-zinc-700 text-zinc-300 hover:text-white"
+                                        >
+                                            Disable Integration
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                {/* Instagram Integration Tab */}
+                <TabsContent value="instagram" className="space-y-6">
+                    <Card className="bg-zinc-900/50 border-zinc-800 backdrop-blur">
+                        <CardHeader>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-pink-600/20 rounded-lg flex items-center justify-center">
+                                    <Instagram className="w-5 h-5 text-pink-400" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-white">Instagram Direct Integration</CardTitle>
+                                    <CardDescription className="text-zinc-500">
+                                        Connect via Instagram Messaging API
+                                    </CardDescription>
+                                </div>
+                                {instagramForm.enabled && (
+                                    <Badge className="bg-green-600/20 text-green-400 border-green-600/50">Enabled</Badge>
+                                )}
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <Alert className="bg-amber-950/30 border-amber-800/50">
+                                <AlertTriangle className="h-4 w-4 text-amber-400" />
+                                <AlertDescription className="text-amber-300">
+                                    Instagram Direct requires a Facebook Developer account and connected Facebook Page.
+                                </AlertDescription>
+                            </Alert>
+
+                            <div className="space-y-4">
+                                <h3 className="font-semibold text-white">Setup Steps</h3>
+                                <ol className="space-y-3 text-sm list-decimal list-inside text-zinc-400">
+                                    <li>Go to <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline inline-flex items-center gap-1">Facebook Developers <ExternalLink className="w-3 h-3" /></a></li>
+                                    <li>Add &quot;Instagram&quot; product to your existing Facebook app</li>
+                                    <li>Connect your Instagram Business account to your Facebook Page</li>
+                                    <li>Configure webhook URL: <code className="bg-zinc-800 px-2 py-1 rounded text-zinc-300 font-mono text-xs">{baseUrl}/api/webhooks/instagram</code></li>
+                                    <li>Use the same Verify Token as Facebook: {facebookForm.verifyToken ? <code className="bg-emerald-900/50 px-2 py-1 rounded text-emerald-300 font-mono text-xs">{facebookForm.verifyToken}</code> : <span className="text-zinc-500 italic">(set in Facebook tab)</span>}</li>
+                                </ol>
+                            </div>
+
+                            <Separator className="bg-zinc-800" />
+
+                            <div className="space-y-4">
+                                <h3 className="font-semibold text-white">Configuration</h3>
+                                <div className="space-y-2">
+                                    <Label className="text-zinc-400">Instagram Account ID</Label>
+                                    <Input 
+                                        value={instagramForm.instagramAccountId}
+                                        onChange={(e) => setInstagramForm(prev => ({ ...prev, instagramAccountId: e.target.value }))}
+                                        placeholder="123456789012345" 
+                                        className="bg-zinc-950 border-zinc-800 text-white" 
+                                    />
+                                    <p className="text-xs text-zinc-500">
+                                        Find this in your Instagram Business account settings or Facebook Business Manager
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-4 pt-2">
+                                    <Button 
+                                        onClick={saveInstagramCredentials}
+                                        disabled={savingInstagram}
+                                        className="bg-pink-600 hover:bg-pink-700 text-white"
+                                    >
+                                        {savingInstagram ? 'Saving...' : (
+                                            <>
+                                                <Instagram className="w-4 h-4 mr-2" />
+                                                {instagramForm.enabled ? 'Update Instagram Settings' : 'Connect Instagram'}
+                                            </>
+                                        )}
+                                    </Button>
+                                    {instagramForm.enabled && (
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setInstagramForm(prev => ({ ...prev, enabled: false }))}
+                                            className="border-zinc-700 text-zinc-300 hover:text-white"
+                                        >
+                                            Disable Integration
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
