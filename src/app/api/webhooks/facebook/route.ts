@@ -30,10 +30,9 @@ export async function GET(req: NextRequest) {
 
     await connectDB();
     
-    // Find business by verify token
+    // Find business by verify token (allow verification even if not enabled yet)
     const business = await Business.findOne({
-        'facebookCredentials.verifyToken': token,
-        'facebookCredentials.enabled': true
+        'facebookCredentials.verifyToken': token
     });
     
     if (!business) {
