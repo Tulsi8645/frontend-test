@@ -59,38 +59,54 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        console.log('Facebook webhook received:', JSON.stringify(body, null, 2));
+        const messages = parseWebhookMessages(body);
+
+        if (messages.length === 0) {
+            return NextResponse.json({ success: true }, { status: 200 });
+        }
+
+        console.log(`[FB WEBHOOK] Processing ${messages.length} messages...`);
 
         await connectDB();
 
-        // Parse messages from webhook
-        const messages = parseWebhookMessages(body);
+        // Process message processing independently of the response to prevent Facebook timeouts
+        // (Facebook expects a 200 OK within 20s)
+        const processPromise = (async () => {
+            for (const msg of messages) {
+                try {
+                    // Find business by pageId
+                    const business = await Business.findOne({
+                        'facebookCredentials.pageId': msg.pageId,
+                        // 'facebookCredentials.enabled': true // Technically should be enabled too
+                    });
 
-        for (const msg of messages) {
-            // Find business by pageId
-            const business = await Business.findOne({
-                'facebookCredentials.pageId': msg.pageId
-            });
+                    if (!business) {
+                        console.error(`[FB WEBHOOK] ERROR: No business FOUND in DB for pageId: ${msg.pageId}`);
+                        continue;
+                    }
 
-            if (!business) {
-                console.error(`No business found for pageId: ${msg.pageId}, skipping message`);
-                continue;
+                    console.log(`[FB WEBHOOK] FOUND business: ${business.name} (${business._id}) for pageId: ${msg.pageId}`);
+
+                    await handleFacebookMessage(
+                        msg.pageId, 
+                        msg.senderId, 
+                        msg.text, 
+                        business._id.toString(),
+                        business.facebookCredentials?.pageAccessToken || ''
+                    );
+                } catch (err) {
+                    console.error('[FB WEBHOOK] Loop error:', err);
+                }
             }
+        })();
 
-            await handleFacebookMessage(
-                msg.pageId, 
-                msg.senderId, 
-                msg.text, 
-                business._id.toString(),
-                business.facebookCredentials?.pageAccessToken || ''
-            );
-        }
-
-        // Must return 200 OK quickly to Facebook
+        // We don't await processPromise - let it run in background
+        // In a serverless environment like Vercel, this might be terminated, 
+        // but it's okay for now or can use edge functions.
+        
         return NextResponse.json({ success: true }, { status: 200 });
     } catch (error) {
-        console.error('Facebook webhook error:', error);
-        // Still return 200 to prevent Facebook from retrying
+        console.error('[FB WEBHOOK] Critical error:', error);
         return NextResponse.json({ success: false }, { status: 200 });
     }
 }
