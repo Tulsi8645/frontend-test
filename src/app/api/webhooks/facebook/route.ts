@@ -10,6 +10,7 @@ import {
 import { generateAIResponse } from '@/lib/ai';
 import { getSocketInstance } from '@/lib/socket';
 import { IChatMessage } from '@/models/ChatSession';
+import mongoose from 'mongoose';
 
 /**
  * GET /api/webhooks/facebook
@@ -120,7 +121,7 @@ async function handleFacebookMessage(
                 channel: 'facebook',
                 externalId: senderId,
                 pageId,
-                businessId,  // Associate with business
+                businessId: new mongoose.Types.ObjectId(businessId),  // Associate with business
                 status: 'active',
                 messages: [],
                 userInfo: {
@@ -132,7 +133,7 @@ async function handleFacebookMessage(
             // Emit session-created event for notifications
             const io = getSocketInstance();
             if (io) {
-                io.to(`business:${businessId}`).emit('session-created', {
+                io.to('admins').emit('session-created', {
                     sessionId,
                     channel: 'facebook',
                     userName: profile?.name || 'Facebook User',
@@ -154,7 +155,7 @@ async function handleFacebookMessage(
         // Notify admins via socket (scoped to business)
         const io = getSocketInstance();
         if (io) {
-            io.to(`business:${businessId}`).emit('session-updated', {
+            io.to('admins').emit('session-updated', {
                 sessionId,
                 message: { role: 'user', text, timestamp },
                 businessId,
@@ -191,7 +192,7 @@ async function handleFacebookMessage(
 
             // Notify admins
             if (io) {
-                io.to(`business:${businessId}`).emit('session-updated', {
+                io.to('admins').emit('session-updated', {
                     sessionId,
                     message: { role: 'bot', text: aiResponse, timestamp: botTimestamp },
                     businessId,

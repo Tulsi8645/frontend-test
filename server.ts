@@ -122,7 +122,10 @@ app.prepare().then(() => {
 
                     // Send to external channel if not website
                     if (session.channel === 'facebook' && session.externalId) {
-                        await sendFacebookMessage(session.externalId, message);
+                        const Business = (await import('./src/models/Business')).default;
+                        const business = await Business.findById(session.businessId);
+                        const token = business?.facebookCredentials?.pageAccessToken;
+                        await sendFacebookMessage(session.externalId, message, token);
                     } else if (session.channel === 'whatsapp' && session.externalId && session.businessId) {
                         // Fetch business credentials for WhatsApp
                         const Business = (await import('./src/models/Business')).default;
