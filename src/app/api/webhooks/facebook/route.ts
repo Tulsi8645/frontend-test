@@ -68,8 +68,7 @@ export async function POST(req: NextRequest) {
         for (const msg of messages) {
             // Find business by pageId
             const business = await Business.findOne({
-                'facebookCredentials.pageId': msg.pageId,
-                'facebookCredentials.enabled': true
+                'facebookCredentials.pageId': msg.pageId
             });
 
             if (!business) {
