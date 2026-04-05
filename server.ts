@@ -100,104 +100,107 @@ app.prepare().then(() => {
             }
         });
 
-        // Handle admin message
-        socket.on('admin-message', async (data: { sessionId: string; message: string; adminId: string }) => {
-            const { sessionId, message, adminId } = data;
-            console.log(`Admin ${adminId} sending message to session ${sessionId}: ${message}`);
+        // Handle admin message (only for broadcasting and external channel sending - DB save is done via API)
+        socket.on('admin-message', async (data: { sessionId: string; message: string; adminId: string; timestamp?: string }) => {
+            const { sessionId, message, adminId, timestamp: clientTimestamp } = data;
+            console.log(`[SOCKET] Admin ${adminId} message broadcast for session ${sessionId}: ${message}`);
 
             try {
                 await connectDB();
 
                 const session = await ChatSession.findOne({ sessionId });
-                if (session && session.status === 'taken_over' && session.takenOverBy === adminId) {
-                    // Check for duplicate message within last 2 seconds (prevent double-click/race condition)
-                    const lastMessage = session.messages[session.messages.length - 1];
-                    if (lastMessage && 
-                        lastMessage.role === 'admin' && 
-                        lastMessage.text === message && 
-                        lastMessage.adminId === adminId &&
-                        (new Date().getTime() - new Date(lastMessage.timestamp).getTime()) < 2000) {
-                        console.log('Duplicate admin message detected, skipping');
-                        return;
-                    }
-                    
-                    const timestamp = new Date();
-                    session.messages.push({
-                        role: 'admin',
-                        text: message,
-                        timestamp,
-                        adminId,
-                    });
-                    session.lastActivityAt = timestamp;
-                    await session.save();
+                if (!session) {
+                    console.log(`[SOCKET] Session ${sessionId} not found`);
+                    return;
+                }
+                
+                if (session.status !== 'taken_over' || session.takenOverBy?.toString() !== adminId) {
+                    console.log(`[SOCKET] Cannot send: session not taken over by this admin. Status: ${session?.status}, takenOverBy: ${session?.takenOverBy}`);
+                    return;
+                }
 
-                    // Send to external channel if not website
-                    if (session.channel === 'facebook' && session.externalId) {
-                        try {
-                            const Business = (await import('./src/models/Business')).default;
-                            const business = await Business.findById(session.businessId);
-                            const token = business?.facebookCredentials?.pageAccessToken;
-                            if (!token) {
-                                console.error(`No Facebook token found for business ${session.businessId}`);
-                            } else {
-                                console.log(`Sending Facebook message to ${session.externalId}`);
-                                await sendFacebookMessage(session.externalId, message, token);
-                                console.log(`Facebook message sent successfully`);
-                            }
-                        } catch (fbError) {
-                            console.error('Error sending Facebook message:', fbError);
+                // Use client timestamp or create new one
+                const timestamp = clientTimestamp ? new Date(clientTimestamp) : new Date();
+
+                // Send to external channel if not website
+                if (session.channel === 'facebook' && session.externalId) {
+                    try {
+                        const Business = (await import('./src/models/Business')).default;
+                        const business = await Business.findById(session.businessId);
+                        const token = business?.facebookCredentials?.pageAccessToken;
+                        if (!token) {
+                            console.error(`[SOCKET] No Facebook token found for business ${session.businessId}`);
+                        } else {
+                            console.log(`[SOCKET] Sending Facebook message to ${session.externalId}`);
+                            await sendFacebookMessage(session.externalId, message, token);
+                            console.log(`[SOCKET] Facebook message sent successfully`);
                         }
-                    } else if (session.channel === 'whatsapp' && session.externalId && session.businessId) {
-                        // Fetch business credentials for WhatsApp
+                    } catch (fbError) {
+                        console.error('[SOCKET] Error sending Facebook message:', fbError);
+                    }
+                } else if (session.channel === 'whatsapp' && session.externalId && session.businessId) {
+                    try {
                         const Business = (await import('./src/models/Business')).default;
                         const business = await Business.findById(session.businessId);
                         if (business?.whatsappCredentials) {
+                            console.log(`[SOCKET] Sending WhatsApp message to ${session.externalId}`);
                             await sendWhatsAppMessage(
                                 session.externalId, 
                                 message,
-                                business.whatsappCredentials.wabaId || '', // Account SID
-                                business.whatsappCredentials.accessToken || '', // Auth Token
-                                business.whatsappCredentials.phoneNumberId || '' // From Number
+                                business.whatsappCredentials.wabaId || '',
+                                business.whatsappCredentials.accessToken || '',
+                                business.whatsappCredentials.phoneNumberId || ''
                             );
+                        } else {
+                            console.error(`[SOCKET] No WhatsApp credentials found for business ${session.businessId}`);
                         }
-                    } else if (session.channel === 'instagram' && session.externalId && session.businessId) {
-                        // Fetch business credentials for Instagram (uses Facebook token)
+                    } catch (waError) {
+                        console.error('[SOCKET] Error sending WhatsApp message:', waError);
+                    }
+                } else if (session.channel === 'instagram' && session.externalId && session.businessId) {
+                    try {
                         const Business = (await import('./src/models/Business')).default;
                         const business = await Business.findById(session.businessId);
                         if (business?.facebookCredentials?.pageAccessToken) {
+                            console.log(`[SOCKET] Sending Instagram message to ${session.externalId}`);
                             await sendInstagramMessage(
                                 session.externalId, 
                                 message,
                                 business.facebookCredentials.pageAccessToken
                             );
+                        } else {
+                            console.error(`[SOCKET] No Instagram credentials found for business ${session.businessId}`);
                         }
+                    } catch (igError) {
+                        console.error('[SOCKET] Error sending Instagram message:', igError);
                     }
-
-                    // Make sure admin is in the session room
-                    socket.join(sessionId);
-                    console.log(`Admin ${adminId} joined room ${sessionId}, now emitting message`);
-
-                    // Broadcast to session room (user and admin)
-                    const messageData = {
-                        sessionId,
-                        role: 'admin',
-                        text: message,
-                        timestamp,
-                        adminId,
-                    };
-                    io.in(sessionId).emit('new-message', messageData);
-                    console.log(`Message emitted to room ${sessionId}`);
-
-                    // Notify other admins (exclude sender to prevent duplication)
-                    socket.to('admins').emit('session-updated', {
-                        sessionId,
-                        message: { role: 'admin', text: message, timestamp, adminId },
-                    });
-                } else {
-                    console.log(`Cannot send message: session not taken over or wrong admin. Status: ${session?.status}, takenOverBy: ${session?.takenOverBy}`);
                 }
+
+                // Make sure admin is in the session room
+                socket.join(sessionId);
+
+                // Broadcast to OTHER admins only (sender already has the message from API response)
+                // Use socket.to() to exclude sender
+                const messageData = {
+                    sessionId,
+                    role: 'admin',
+                    text: message,
+                    timestamp: timestamp.toISOString(),
+                    adminId,
+                };
+                
+                // Broadcast to session room (other admins viewing this session)
+                socket.to(sessionId).emit('new-message', messageData);
+                
+                // Notify other admins in the admin list
+                socket.to('admins').emit('session-updated', {
+                    sessionId,
+                    message: { role: 'admin', text: message, timestamp: timestamp.toISOString(), adminId },
+                });
+                
+                console.log(`[SOCKET] Admin message broadcast complete for ${sessionId}`);
             } catch (error) {
-                console.error('Error saving admin message:', error);
+                console.error('[SOCKET] Error handling admin message:', error);
             }
         });
 
