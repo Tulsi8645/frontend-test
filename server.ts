@@ -110,6 +110,17 @@ app.prepare().then(() => {
 
                 const session = await ChatSession.findOne({ sessionId });
                 if (session && session.status === 'taken_over' && session.takenOverBy === adminId) {
+                    // Check for duplicate message within last 2 seconds (prevent double-click/race condition)
+                    const lastMessage = session.messages[session.messages.length - 1];
+                    if (lastMessage && 
+                        lastMessage.role === 'admin' && 
+                        lastMessage.text === message && 
+                        lastMessage.adminId === adminId &&
+                        (new Date().getTime() - new Date(lastMessage.timestamp).getTime()) < 2000) {
+                        console.log('Duplicate admin message detected, skipping');
+                        return;
+                    }
+                    
                     const timestamp = new Date();
                     session.messages.push({
                         role: 'admin',
@@ -122,10 +133,20 @@ app.prepare().then(() => {
 
                     // Send to external channel if not website
                     if (session.channel === 'facebook' && session.externalId) {
-                        const Business = (await import('./src/models/Business')).default;
-                        const business = await Business.findById(session.businessId);
-                        const token = business?.facebookCredentials?.pageAccessToken;
-                        await sendFacebookMessage(session.externalId, message, token);
+                        try {
+                            const Business = (await import('./src/models/Business')).default;
+                            const business = await Business.findById(session.businessId);
+                            const token = business?.facebookCredentials?.pageAccessToken;
+                            if (!token) {
+                                console.error(`No Facebook token found for business ${session.businessId}`);
+                            } else {
+                                console.log(`Sending Facebook message to ${session.externalId}`);
+                                await sendFacebookMessage(session.externalId, message, token);
+                                console.log(`Facebook message sent successfully`);
+                            }
+                        } catch (fbError) {
+                            console.error('Error sending Facebook message:', fbError);
+                        }
                     } else if (session.channel === 'whatsapp' && session.externalId && session.businessId) {
                         // Fetch business credentials for WhatsApp
                         const Business = (await import('./src/models/Business')).default;
