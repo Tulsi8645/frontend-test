@@ -41,9 +41,9 @@ export default function PrivacyPolicyPage() {
                     {/* Introduction */}
                     <section className="mb-10">
                         <p className="text-zinc-300 leading-relaxed">
-                            Sales AI Bot ("we," "our," or "us") is committed to protecting your privacy. 
-                            This Privacy Policy explains how we collect, use, disclose, and safeguard your 
-                            information when you use our AI-powered chatbot service through Facebook Messenger, 
+                            Sales AI Bot ("we," "our," or "us") is committed to protecting your privacy.
+                            This Privacy Policy explains how we collect, use, disclose, and safeguard your
+                            information when you use our AI-powered chatbot service through Facebook Messenger,
                             Instagram Direct, WhatsApp, and our website chat widget.
                         </p>
                     </section>
@@ -103,9 +103,9 @@ export default function PrivacyPolicyPage() {
                             <h2 className="text-2xl font-semibold">Data Retention</h2>
                         </div>
                         <p className="text-zinc-300 leading-relaxed">
-                            Chat messages and conversation history are retained for up to 90 days, 
-                            after which they are automatically deleted. Business account information 
-                            is retained as long as the account is active. Upon account deletion, 
+                            Chat messages and conversation history are retained for up to 90 days,
+                            after which they are automatically deleted. Business account information
+                            is retained as long as the account is active. Upon account deletion,
                             all associated data is permanently removed within 30 days.
                         </p>
                     </section>
@@ -133,7 +133,7 @@ export default function PrivacyPolicyPage() {
                             We use trusted third-party services to operate our platform:
                         </p>
                         <ul className="space-y-2 mt-3 text-zinc-300 list-disc list-inside">
-                            <li><strong className="text-white">Google Gemini:</strong> AI processing for generating chat responses</li>
+                            <li><strong className="text-white">AI model:</strong> AI processing for generating chat responses</li>
                             <li><strong className="text-white">Meta (Facebook/Instagram):</strong> Messaging platform integration</li>
                             <li><strong className="text-white">Twilio:</strong> WhatsApp messaging services</li>
                             <li><strong className="text-white">MongoDB Atlas:</strong> Secure data storage</li>
@@ -150,7 +150,7 @@ export default function PrivacyPolicyPage() {
                             <h2 className="text-2xl font-semibold">Contact Us</h2>
                         </div>
                         <p className="text-zinc-300 mb-4">
-                            If you have questions about this Privacy Policy or want to exercise your data rights, 
+                            If you have questions about this Privacy Policy or want to exercise your data rights,
                             please contact us:
                         </p>
                         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">

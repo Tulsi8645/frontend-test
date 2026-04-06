@@ -16,9 +16,14 @@ export async function generateAIResponse(
     businessId?: string
 ): Promise<string | null> {
     try {
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            console.error('GEMINI_API_KEY is not defined');
+        const apiKeys = [
+            process.env.GEMINI_API_KEY1,
+            process.env.GEMINI_API_KEY2,
+            process.env.GEMINI_API_KEY
+        ].filter(Boolean) as string[];
+
+        if (apiKeys.length === 0) {
+            console.error('No GEMINI_API_KEY is defined');
             return null;
         }
 
@@ -43,14 +48,30 @@ ${historyContext ? `Previous conversation:\n${historyContext}\n\n` : ''}Customer
 ${message}
 `;
 
-        const ai = new GoogleGenAI(apiKey as any);
+        let responseText = null;
+        
+        // Loop through keys and fallback if one fails
+        for (let i = 0; i < apiKeys.length; i++) {
+            try {
+                const ai = new GoogleGenAI(apiKeys[i] as any);
+                const response = await (ai as any).models.generateContent({
+                    model: 'gemini-3-flash-preview',
+                    contents: prompt,
+                });
+                
+                if (response?.text) {
+                    responseText = response.text;
+                    break; // Success! break the fallback loop
+                }
+            } catch (error) {
+                console.warn(`API Key ${i + 1} failed:`, error instanceof Error ? error.message : 'Unknown error');
+                if (i === apiKeys.length - 1) {
+                    throw new Error("All provided Gemini API keys failed.");
+                }
+            }
+        }
 
-        const response = await (ai as any).models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: prompt,
-        });
-
-        return response.text || "Sorry, I couldn't generate a response.";
+        return responseText || "Sorry, I couldn't generate a response.";
     } catch (error) {
         console.error('AI Generation Error:', error);
         return null;
